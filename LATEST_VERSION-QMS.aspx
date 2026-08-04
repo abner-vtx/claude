@@ -469,7 +469,21 @@ textarea.form-input{resize:vertical;min-height:72px;}
    </div>
 
    <div class="section-title">Section 02 &mdash; Description of the Nonconforming Work</div>
-   <div class="form-group"><label>Category of the Nonconformance <span class="req">*</span></label><select class="form-input" name="NCCategory" multiple size="4"><option>Procedural</option><option>Instrumentation &amp; Equipment</option><option>Documentation &amp; Record Keeping</option><option>Sample Handling</option><option>Personnel Training &amp; Competence</option><option>Quality Control</option><option>Environmental Conditions</option><option>Reporting Errors (Test Reports)</option><option>Supplier Related</option><option>Safety</option><option>Other</option></select></div>
+   <div class="form-group"><label>Category of the Nonconformance <span class="req">*</span></label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin-top:4px;font-size:13px">
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Procedural"> Procedural</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Instrumentation &amp; Equipment"> Instrumentation &amp; Equipment</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Documentation &amp; Record Keeping"> Documentation &amp; Record Keeping</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Sample Handling"> Sample Handling</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Personnel Training &amp; Competence"> Personnel Training &amp; Competence</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Quality Control"> Quality Control</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Environmental Conditions"> Environmental Conditions</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Reporting Errors (Test Reports)"> Reporting Errors (Test Reports)</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Supplier Related"> Supplier Related</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Safety"> Safety</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Other"> Other</label>
+    </div>
+   </div>
    <div class="form-grid">
     <div class="form-group"><label>Related Sample</label><input class="form-input" name="RelatedSample" placeholder="N/A" value="N/A"></div>
     <div class="form-group"><label>Internal ID #</label><input class="form-input" name="InternalID"></div>
@@ -537,7 +551,13 @@ textarea.form-input{resize:vertical;min-height:72px;}
    </div>
    <div class="form-grid">
     <div class="form-group"><label>Was the root cause identified? <span class="req">*</span></label><select class="form-input" name="RootCauseIdentified"><option>No</option><option>Yes</option></select></div>
-    <div class="form-group"><label>Root-Cause Tool(s) Used</label><select class="form-input" name="RCAToolUsed" multiple size="3"><option>Brainstorm (FM QP16.02)</option><option>Fishbone / Ishikawa (FM QP16.03)</option><option>Five Whys (FM QP16.04)</option></select></div>
+    <div class="form-group"><label>Root-Cause Tool(s) Used</label>
+     <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;font-size:13px">
+      <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="RCAToolUsed" value="Brainstorm (FM QP16.02)"> Brainstorm (FM QP16.02)</label>
+      <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="RCAToolUsed" value="Fishbone / Ishikawa (FM QP16.03)"> Fishbone / Ishikawa (FM QP16.03)</label>
+      <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="RCAToolUsed" value="Five Whys (FM QP16.04)"> Five Whys (FM QP16.04)</label>
+     </div>
+    </div>
    </div>
    <div class="form-group span-2"><label>Root Cause</label><textarea class="form-input" name="RootCause" placeholder="The determined root cause(s)"></textarea></div>
 
