@@ -1,0 +1,528 @@
+{
+ "nodes": [
+  {
+   "id": "EP-01",
+   "label": "EP-01",
+   "title": "Use, Maintenance and Intermediate checks of Balances",
+   "type": "Equipment Procedure"
+  },
+  {
+   "id": "EP-02",
+   "label": "EP-02",
+   "title": "Use, Maintenance and Intermediate checks for Micropipettes",
+   "type": "Equipment Procedure"
+  },
+  {
+   "id": "EP-03",
+   "label": "EP-03",
+   "title": "Use, Maintenance and Intermediate checks of Thermometers",
+   "type": "Equipment Procedure"
+  },
+  {
+   "id": "EP-04",
+   "label": "EP-04",
+   "title": "Use, Maintenance and Intermediate Checks of pH Meters",
+   "type": "Equipment Procedure"
+  },
+  {
+   "id": "EP-05",
+   "label": "EP-05",
+   "title": "Use, Maintenance and Intermediate Checks of Temperature Controlled Chambers",
+   "type": "Equipment Procedure"
+  },
+  {
+   "id": "EP-06",
+   "label": "EP-06",
+   "title": "Operation and Maintenance of HPLC Systems",
+   "type": "Equipment Procedure"
+  },
+  {
+   "id": "LP-01",
+   "label": "LP-01",
+   "title": "Laboratory Safety",
+   "type": "Laboratory Procedure"
+  },
+  {
+   "id": "LP-02",
+   "label": "LP-02",
+   "title": "Analytical Data - Interpreation and Treatment",
+   "type": "Laboratory Procedure"
+  },
+  {
+   "id": "LP-03",
+   "label": "LP-03",
+   "title": "Management of Out-of-Specification Results",
+   "type": "Laboratory Procedure"
+  },
+  {
+   "id": "LP-04",
+   "label": "LP-04",
+   "title": "Validation of Spreadsheets Used for Calculations",
+   "type": "Laboratory Procedure"
+  },
+  {
+   "id": "LP-05",
+   "label": "LP-05",
+   "title": "Management of Reference Materials",
+   "type": "Laboratory Procedure"
+  },
+  {
+   "id": "LP-06",
+   "label": "LP-06",
+   "title": "Management of Reagents and Prepared Solutions",
+   "type": "Laboratory Procedure"
+  },
+  {
+   "id": "LP-07",
+   "label": "LP-07",
+   "title": "Management of Volumetric Glassware",
+   "type": "Laboratory Procedure"
+  },
+  {
+   "id": "LS-02",
+   "label": "LS-02",
+   "title": "List of Approved Vendors",
+   "type": "List/Register"
+  },
+  {
+   "id": "QM",
+   "label": "QM",
+   "title": "Quality Manual",
+   "type": "Quality Manual"
+  },
+  {
+   "id": "QP-01",
+   "label": "QP-01",
+   "title": "Management of Personnel",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-02",
+   "label": "QP-02",
+   "title": "Facilities and Environmental Conditions",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-03",
+   "label": "QP-03",
+   "title": "Management of Equipment",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-04",
+   "label": "QP-04",
+   "title": "Metrological Traceability",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-05",
+   "label": "QP-05",
+   "title": "Externally Provided Products and Services",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-06",
+   "label": "QP-06",
+   "title": "Review of Requests, Tenders and Contracts",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-07",
+   "label": "QP-07",
+   "title": "Test Methods Selection, Verification and Validation",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-08",
+   "label": "QP-08",
+   "title": "MANAGEMENT OF SAMPLES",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-09",
+   "label": "QP-09",
+   "title": "Evaluation of Measurement Uncertainty",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-10",
+   "label": "QP-10",
+   "title": "Validity of Test Results",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-11",
+   "label": "QP-11",
+   "title": "Reporting of Results",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-12",
+   "label": "QP-12",
+   "title": "Management of Complaints and Feedback",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-13",
+   "label": "QP-13",
+   "title": "Management of Nonconforming Work",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-14",
+   "label": "QP-14",
+   "title": "Control of Management System Documents",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-15",
+   "label": "QP-15",
+   "title": "Actions to Address Risks and Opportunities",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-16",
+   "label": "QP-16",
+   "title": "Corrective Actions",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-17",
+   "label": "QP-17",
+   "title": "Audits",
+   "type": "Quality Procedure"
+  },
+  {
+   "id": "QP-18",
+   "label": "QP-18",
+   "title": "Management Reviews",
+   "type": "Quality Procedure"
+  }
+ ],
+ "edges": [
+  {
+   "source": "EP-01",
+   "target": "QP-03",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "EP-01",
+   "target": "QP-13",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "EP-02",
+   "target": "QP-13",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "EP-03",
+   "target": "QP-13",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "EP-04",
+   "target": "LP-06",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "EP-04",
+   "target": "QP-13",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "EP-05",
+   "target": "QP-13",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "EP-06",
+   "target": "QP-13",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QM",
+   "target": "LP-04",
+   "type": "Governs",
+   "weight": 2
+  },
+  {
+   "source": "QM",
+   "target": "QP-01",
+   "type": "Governs",
+   "weight": 5
+  },
+  {
+   "source": "QM",
+   "target": "QP-02",
+   "type": "Governs",
+   "weight": 3
+  },
+  {
+   "source": "QM",
+   "target": "QP-03",
+   "type": "Governs",
+   "weight": 12
+  },
+  {
+   "source": "QM",
+   "target": "QP-04",
+   "type": "Governs",
+   "weight": 3
+  },
+  {
+   "source": "QM",
+   "target": "QP-05",
+   "type": "Governs",
+   "weight": 3
+  },
+  {
+   "source": "QM",
+   "target": "QP-06",
+   "type": "Governs",
+   "weight": 6
+  },
+  {
+   "source": "QM",
+   "target": "QP-07",
+   "type": "Governs",
+   "weight": 3
+  },
+  {
+   "source": "QM",
+   "target": "QP-08",
+   "type": "Governs",
+   "weight": 4
+  },
+  {
+   "source": "QM",
+   "target": "QP-09",
+   "type": "Governs",
+   "weight": 2
+  },
+  {
+   "source": "QM",
+   "target": "QP-10",
+   "type": "Governs",
+   "weight": 3
+  },
+  {
+   "source": "QM",
+   "target": "QP-11",
+   "type": "Governs",
+   "weight": 2
+  },
+  {
+   "source": "QM",
+   "target": "QP-12",
+   "type": "Governs",
+   "weight": 1
+  },
+  {
+   "source": "QM",
+   "target": "QP-13",
+   "type": "Governs",
+   "weight": 2
+  },
+  {
+   "source": "QM",
+   "target": "QP-14",
+   "type": "Governs",
+   "weight": 5
+  },
+  {
+   "source": "QM",
+   "target": "QP-15",
+   "type": "Governs",
+   "weight": 6
+  },
+  {
+   "source": "QM",
+   "target": "QP-16",
+   "type": "Governs",
+   "weight": 1
+  },
+  {
+   "source": "QM",
+   "target": "QP-17",
+   "type": "Governs",
+   "weight": 2
+  },
+  {
+   "source": "QM",
+   "target": "QP-18",
+   "type": "Governs",
+   "weight": 1
+  },
+  {
+   "source": "QP-03",
+   "target": "QP-05",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-03",
+   "target": "QP-13",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-06",
+   "target": "QP-05",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-07",
+   "target": "QP-15",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-08",
+   "target": "QP-06",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-09",
+   "target": "QP-07",
+   "type": "References",
+   "weight": 3
+  },
+  {
+   "source": "QP-09",
+   "target": "QP-10",
+   "type": "References",
+   "weight": 2
+  },
+  {
+   "source": "QP-09",
+   "target": "QP-11",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-09",
+   "target": "QP-14",
+   "type": "References",
+   "weight": 2
+  },
+  {
+   "source": "QP-09",
+   "target": "QP-18",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-10",
+   "target": "QP-13",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-10",
+   "target": "QP-14",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-12",
+   "target": "QP-13",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-12",
+   "target": "QP-15",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-12",
+   "target": "QP-18",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-13",
+   "target": "LP-03",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-13",
+   "target": "QP-16",
+   "type": "References",
+   "weight": 2
+  },
+  {
+   "source": "QP-14",
+   "target": "EP-01",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-14",
+   "target": "LP-01",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-14",
+   "target": "QP-01",
+   "type": "References",
+   "weight": 3
+  },
+  {
+   "source": "QP-15",
+   "target": "QP-14",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-16",
+   "target": "QP-13",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-16",
+   "target": "QP-15",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-17",
+   "target": "QP-13",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-17",
+   "target": "QP-16",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-18",
+   "target": "QP-13",
+   "type": "References",
+   "weight": 1
+  },
+  {
+   "source": "QP-18",
+   "target": "QP-16",
+   "type": "References",
+   "weight": 1
+  }
+ ]
+}

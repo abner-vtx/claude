@@ -1,0 +1,34 @@
+DocID,Title,Type,Revision,StepsSection,IsScanned
+EP-01,"Use, Maintenance and Intermediate checks of Balances",Equipment Procedure,Rev02,8,No
+EP-02,"Use, Maintenance and Intermediate checks for Micropipettes",Equipment Procedure,Rev02,8,No
+EP-03,"Use, Maintenance and Intermediate checks of Thermometers",Equipment Procedure,Rev02,8,No
+EP-04,"Use, Maintenance and Intermediate Checks of pH Meters",Equipment Procedure,Rev02,8,No
+EP-05,"Use, Maintenance and Intermediate Checks of Temperature Controlled Chambers",Equipment Procedure,Rev02,8,No
+EP-06,Operation and Maintenance of HPLC Systems,Equipment Procedure,Rev02,8,No
+LP-01,Laboratory Safety,Laboratory Procedure,Rev02,7,No
+LP-02,Analytical Data - Interpreation and Treatment,Laboratory Procedure,Rev02,7,No
+LP-03,Management of Out-of-Specification Results,Laboratory Procedure,Rev02,7,No
+LP-04,Validation of Spreadsheets Used for Calculations,Laboratory Procedure,Rev02,7,No
+LP-05,Management of Reference Materials,Laboratory Procedure,Rev02,7,No
+LP-06,Management of Reagents and Prepared Solutions,Laboratory Procedure,Rev02,7,No
+LP-07,Management of Volumetric Glassware,Laboratory Procedure,Rev02,7,No
+LS-02,List of Approved Vendors,List/Register,,,Yes
+QM,Quality Manual,Quality Manual,Rev03,,No
+QP-01,Management of Personnel,Quality Procedure,Rev02,5,No
+QP-02,Facilities and Environmental Conditions,Quality Procedure,Rev02,5,No
+QP-03,Management of Equipment,Quality Procedure,Rev02,5,No
+QP-04,Metrological Traceability,Quality Procedure,Rev02,5,No
+QP-05,Externally Provided Products and Services,Quality Procedure,Rev01,5,No
+QP-06,"Review of Requests, Tenders and Contracts",Quality Procedure,Rev02,5,No
+QP-07,"Test Methods Selection, Verification and Validation",Quality Procedure,Rev02,5,No
+QP-08,Management of Samples,Quality Procedure,,5,No
+QP-09,Evaluation of Measurement Uncertainty,Quality Procedure,Rev02,5,No
+QP-10,Validity of Test Results,Quality Procedure,Rev02,5,No
+QP-11,Reporting of Results,Quality Procedure,Rev03,5,No
+QP-12,Management of Complaints and Feedback,Quality Procedure,Rev03,5,No
+QP-13,Management of Nonconforming Work,Quality Procedure,Rev02,5,No
+QP-14,Control of Management System Documents,Quality Procedure,Rev02,5,No
+QP-15,Actions to Address Risks and Opportunities,Quality Procedure,Rev02,5,No
+QP-16,Corrective Actions,Quality Procedure,Rev02,5,No
+QP-17,Audits,Quality Procedure,Rev02,5,No
+QP-18,Management Reviews,Quality Procedure,Rev02,5,No

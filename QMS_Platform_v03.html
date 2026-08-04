@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vertex Analytical Labs — QMS Dashboard v03</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <style>
+    :root {
+      --navy:#003d7a; --navy-mid:#1a5fa0; --navy-light:#e8f0fb;
+      --gold:#B8860B; --gold-light:#FDF3DC;
+      --teal:#0D9488; --teal-light:#CCFBF1;
+      --green:#15803D; --green-light:#DCFCE7;
+      --orange:#C2410C; --orange-light:#FEF3C7;
+      --purple:#7C3AED; --purple-light:#EDE9FE;
+      --slate:#475569; --bg:#F1F5F9; --white:#FFFFFF; --border:#E2E8F0;
+      --red:#DC2626; --red-light:#FEE2E2;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;color:var(--slate);}
+
+    /* ── HEADER ── */
+    .app-header{background:linear-gradient(135deg,var(--navy),#1a3a5c);color:#fff;padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;}
+    .app-header h1{font-size:1.5rem;font-weight:700;}
+    .app-header p{font-size:.85rem;opacity:.85;}
+    .header-badge{background:linear-gradient(135deg,var(--gold),#d4af37);color:#fff;padding:.4rem 1.1rem;border-radius:2rem;font-size:.8rem;font-weight:600;box-shadow:0 2px 8px rgba(184,134,11,.3);}
+    .status-dot{width:10px;height:10px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+    /* ── PERSONA BAR ── */
+    .persona-bar{background:#fff;padding:.85rem 2rem;border-bottom:1px solid var(--border);display:flex;gap:.6rem;flex-wrap:wrap;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+    .persona-btn{padding:.55rem 1.1rem;border:2px solid var(--navy);background:#fff;color:var(--navy);border-radius:2rem;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .25s;display:flex;align-items:center;gap:.4rem;}
+    .persona-btn:hover{background:var(--navy-light);}
+    .persona-btn.active{background:var(--navy);color:#fff;box-shadow:0 4px 12px rgba(0,61,122,.25);}
+
+    /* ── MAIN ── */
+    .main{padding:2rem;max-width:1600px;margin:0 auto;}
+    .view{display:none;animation:fadeUp .3s ease-out;}
+    .view.active{display:block;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ── ROLE DESCRIPTION BANNER ── */
+    .role-desc{background:var(--navy-light);border-left:4px solid var(--navy);padding:1rem 1.25rem;border-radius:0 6px 6px 0;margin-bottom:1.5rem;font-size:.9rem;color:var(--navy);}
+
+    /* ── SECTION TITLE ── */
+    .sec-title{font-size:1.1rem;font-weight:700;color:var(--navy);margin:2rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid var(--navy);}
+
+    /* ── METRIC CARDS ── */
+    .metrics-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.75rem;}
+    .metric{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;padding:1.25rem;border-radius:10px;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.12);}
+    .metric .num{font-size:2.2rem;font-weight:700;line-height:1;}
+    .metric .lbl{font-size:.78rem;opacity:.85;margin-top:.4rem;}
+
+    /* ── GRID LAYOUTS ── */
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem;}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-bottom:2rem;}
+    .grid-auto{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;margin-bottom:1.75rem;}
+
+    /* ── WHITE CARD ── */
+    .card{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:box-shadow .25s;}
+    .card:hover{box-shadow:0 4px 16px rgba(0,0,0,.12);}
+    .card-title{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem;}
+
+    /* ── COMPLIANCE BADGE CARDS ── */
+    .badge-card{border:2px solid var(--border);border-radius:8px;padding:1.25rem;transition:all .25s;}
+    .badge-card:hover{box-shadow:0 6px 16px rgba(0,0,0,.1);transform:translateY(-3px);}
+    .badge-card.full{background:var(--green-light);border-color:var(--green);}
+    .badge-card.partial{background:var(--orange-light);border-color:var(--orange);}
+    .badge-card.gap{background:var(--red-light);border-color:var(--red);}
+    .badge-card h4{color:var(--navy);margin:.5rem 0;}
+    .badge-card p{font-size:.87rem;line-height:1.5;}
+    .badge-card .sop-ref{background:#f5f5f5;padding:.5rem .75rem;border-left:3px solid var(--navy);margin-top:.75rem;font-size:.82rem;}
+    .cbadge{display:inline-block;padding:.3rem .7rem;border-radius:1rem;font-weight:700;font-size:.78rem;color:#fff;margin-left:.6rem;}
+    .cbadge.full{background:var(--green);}
+    .cbadge.partial{background:var(--orange);}
+    .cbadge.gap{background:var(--red);}
+    .clause-num{font-weight:700;color:var(--navy);font-size:1.1rem;}
+
+    /* ── QMS AT A GLANCE COUNTERS ── */
+    .counter-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
+    .counter-item{text-align:center;}
+    .counter-icon{width:52px;height:52px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto .6rem;}
+    .counter-number{font-size:2.4rem;font-weight:700;color:var(--navy);line-height:1;}
+    .counter-label{font-size:.8rem;color:var(--slate);margin-top:.35rem;}
+
+    /* ── COMPLIANCE STATEMENT ── */
+    .compliance-stmt{border-left:4px solid var(--gold);padding-left:1.25rem;line-height:1.75;font-size:.93rem;color:var(--slate);}
+    .compliance-stmt::before{content:"✓";display:flex;width:38px;height:38px;background:var(--gold);color:#fff;border-radius:50%;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;margin-bottom:.85rem;}
+
+    /* ── RADAR CHART ── */
+    .radar-wrap{display:flex;justify-content:center;align-items:center;height:300px;}
+
+    /* ── TIMELINE ── */
+    .timeline-wrap{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+    .timeline{position:relative;padding:2rem 0;}
+    .timeline::before{content:"";position:absolute;top:50%;left:0;right:0;height:2px;background:var(--navy);transform:translateY(-50%);}
+    .timeline-items{display:flex;justify-content:space-between;position:relative;z-index:1;}
+    .timeline-item{text-align:center;flex:1;}
+    .timeline-dot{width:18px;height:18px;background:var(--gold);border:3px solid #fff;border-radius:50%;margin:0 auto .6rem;box-shadow:0 0 0 2px var(--navy);}
+    .timeline-label{font-size:.78rem;font-weight:600;color:var(--navy);margin-bottom:.2rem;}
+    .timeline-year{font-size:.72rem;color:var(--slate);}
+
+    /* ── HIGHLIGHTS BOX ── */
+    .hl-box{background:#e3f2fd;border:2px solid #2196F3;padding:1rem 1.25rem;border-radius:8px;margin:1rem 0;}
+    .hl-box h4{color:#1565C0;margin-bottom:.6rem;}
+    .hl-box ul{list-style:none;padding:0;}
+    .hl-box li{padding:.35rem 0 .35rem 1.25rem;position:relative;font-size:.88rem;}
+    .hl-box li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700;}
+
+    /* ── ACTION BOX ── */
+    .action-box{background:var(--orange-light);border-left:4px solid var(--orange);padding:1rem 1.25rem;border-radius:0 6px 6px 0;margin:1rem 0;font-size:.88rem;}
+    .action-box strong{color:var(--orange);}
+
+    /* ── CLAUSE-TO-CLAUSE MATRIX ── */
+    .search-bar{margin-bottom:1rem;display:flex;}
+    .search-bar input{flex:1;padding:.65rem 1rem;border:1px solid var(--border);border-radius:6px;font-size:.9rem;transition:border-color .25s;}
+    .search-bar input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(0,61,122,.1);}
+    .matrix-wrap{overflow-x:auto;background:#fff;border-radius:10px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:1.5rem;}
+    .comp-matrix{width:100%;border-collapse:collapse;font-size:.8rem;}
+    .comp-matrix thead{position:sticky;top:0;background:var(--navy-light);z-index:10;}
+    .comp-matrix th{padding:.6rem .4rem;text-align:center;color:var(--navy);font-weight:600;border:1px solid var(--border);writing-mode:vertical-rl;transform:rotate(180deg);height:180px;vertical-align:bottom;}
+    .comp-matrix td{padding:.75rem .4rem;text-align:center;border:1px solid var(--border);height:44px;vertical-align:middle;}
+    .comp-matrix tr:nth-child(even){background:var(--bg);}
+    .row-hdr{font-weight:600;color:var(--navy);text-align:left!important;position:sticky;left:0;background:var(--navy-light);z-index:9;min-width:90px;padding:.75rem .75rem!important;cursor:pointer;}
+    .mc{cursor:pointer;transition:all .2s;position:relative;}
+    .mc.covered{background:var(--navy);color:#fff;font-weight:600;}
+    .mc.covered::after{content:"✓";font-size:1.1rem;}
+    .mc.covered:hover{transform:scale(1.1);box-shadow:0 0 0 3px rgba(0,61,122,.3);}
+    .mc.empty{background:#f8fafc;}
+    .mc.highlighted{background:var(--gold);color:#fff;font-weight:600;}
+
+    /* ── DETAIL PANEL ── */
+    .detail-panel{position:fixed;right:0;top:0;width:380px;height:100vh;background:#fff;box-shadow:-4px 0 12px rgba(0,0,0,.15);z-index:1000;transform:translateX(100%);transition:transform .3s;overflow-y:auto;padding:1.75rem;}
+    .detail-panel.open{transform:translateX(0);}
+    .panel-close{position:absolute;top:1.25rem;right:1.25rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--slate);}
+    .dp-number{font-size:1.4rem;font-weight:700;color:var(--gold);margin-bottom:.25rem;}
+    .dp-title{font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:1rem;}
+    .dp-section{margin-bottom:1.25rem;}
+    .dp-section-title{font-size:.8rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;}
+    .dp-badge{display:inline-block;padding:.3rem .65rem;background:var(--navy-light);color:var(--navy);border-radius:4px;font-size:.77rem;font-weight:600;margin:.2rem;}
+    .dp-badge.form{background:var(--teal-light);color:var(--teal);}
+
+    /* ── SOP LIST (Lab Manager) ── */
+    .two-panel{display:grid;grid-template-columns:360px 1fr;gap:1.5rem;min-height:600px;}
+    .sop-list{background:#fff;border-radius:10px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,.08);max-height:700px;overflow-y:auto;}
+    .sop-card{padding:.85rem;border:1px solid var(--border);border-radius:7px;margin-bottom:.75rem;cursor:pointer;transition:all .2s;}
+    .sop-card:hover{border-color:var(--navy);box-shadow:0 2px 8px rgba(0,61,122,.1);transform:translateX(3px);}
+    .sop-card.selected{background:var(--navy-light);border-color:var(--navy);}
+    .sop-chip{display:inline-block;padding:.3rem .65rem;border-radius:4px;font-size:.75rem;font-weight:700;color:#fff;margin-bottom:.4rem;}
+    .sop-title{font-weight:600;color:var(--navy);margin-bottom:.4rem;font-size:.9rem;}
+    .sop-meta{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.5rem;font-size:.77rem;}
+    .sop-meta span{background:var(--bg);padding:.2rem .45rem;border-radius:3px;color:var(--slate);}
+    .sop-stats{display:flex;gap:.9rem;font-size:.78rem;color:var(--slate);padding-top:.5rem;border-top:1px solid var(--border);}
+    .sop-detail-pane{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+    .sdp-number{font-size:.82rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:1px;}
+    .sdp-title{font-size:1.5rem;font-weight:700;color:var(--navy);margin:.35rem 0 1rem;}
+    .sdp-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:1.25rem;font-size:.88rem;}
+    .rel-box{background:var(--bg);border-radius:7px;padding:1.1rem;margin:1rem 0;}
+    .rel-title{font-size:.82rem;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;}
+    .rel-items{display:flex;flex-wrap:wrap;gap:.4rem;}
+    .rel-item{background:#fff;border:1px solid var(--border);padding:.3rem .6rem;border-radius:4px;font-size:.79rem;color:var(--navy);font-weight:500;}
+    .network-box{background:#fff;border-radius:10px;padding:1.25rem;margin-top:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+    .network-title{font-size:.85rem;font-weight:600;color:var(--navy);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.5px;}
+
+    /* ── ANALYST (WHAT ARE WE DOING) ── */
+    .search-prompt{text-align:center;margin-bottom:2rem;}
+    .search-prompt-title{font-size:1.5rem;font-weight:700;color:var(--navy);margin-bottom:.85rem;}
+    .search-wrap{position:relative;display:inline-block;width:100%;max-width:560px;}
+    .search-lg{width:100%;padding:.9rem 1rem;font-size:.95rem;border:2px solid var(--border);border-radius:8px;transition:border-color .25s;}
+    .search-lg:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(0,61,122,.1);}
+    .autocomplete{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:280px;overflow-y:auto;z-index:100;display:none;}
+    .autocomplete.active{display:block;}
+    .ac-item{padding:.85rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s;}
+    .ac-item:last-child{border-bottom:none;}
+    .ac-item:hover{background:var(--navy-light);}
+    .ac-item-title{font-weight:600;color:var(--navy);margin-bottom:.2rem;font-size:.9rem;}
+    .ac-item-sops{font-size:.78rem;color:var(--slate);}
+    .activity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.25rem;}
+    .act-card{background:#fff;border-radius:10px;padding:1.25rem;text-align:center;cursor:pointer;transition:all .25s;box-shadow:0 2px 8px rgba(0,0,0,.08);border:2px solid transparent;}
+    .act-card:hover{transform:translateY(-3px);box-shadow:0 6px 14px rgba(0,0,0,.12);border-color:var(--navy);}
+    .act-card.expanded{background:var(--navy-light);border-color:var(--navy);}
+    .act-icon{font-size:2.2rem;margin-bottom:.75rem;}
+    .act-title{font-weight:600;color:var(--navy);margin-bottom:.6rem;font-size:.88rem;line-height:1.4;}
+    .act-sops{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:center;margin-top:.6rem;}
+    .act-pill{background:var(--navy);color:#fff;padding:.25rem .5rem;border-radius:3px;font-size:.72rem;font-weight:600;}
+    .expanded-act{background:#fff;border-radius:10px;padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.08);display:none;}
+    .expanded-act.show{display:block;animation:slideDown .3s ease;}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    .ea-title{font-size:1.15rem;font-weight:700;color:var(--navy);border-bottom:2px solid var(--navy);padding-bottom:.75rem;margin-bottom:1rem;}
+    .ea-step{background:var(--navy);color:#fff;padding:.65rem 1rem;border-radius:6px;font-weight:600;margin-bottom:.5rem;font-size:.9rem;}
+    .ea-instr{background:var(--bg);padding:.85rem;border-radius:6px;margin-bottom:.35rem;font-size:.87rem;color:var(--slate);}
+    .ea-form{font-size:.78rem;color:var(--navy);font-weight:600;font-style:italic;}
+
+    /* ── AUDITOR VIEW ── */
+    .three-panel{display:grid;grid-template-columns:260px 1fr 260px;gap:1.5rem;min-height:600px;}
+    .clause-tree{background:#fff;border-radius:10px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,.08);max-height:700px;overflow-y:auto;}
+    .tree-sec{margin-bottom:1.25rem;}
+    .tree-sec-hdr{font-weight:700;color:var(--navy);font-size:.85rem;padding:.5rem;border-radius:4px;cursor:pointer;}
+    .tree-sec-hdr:hover{background:var(--navy-light);}
+    .tree-clause{padding:.45rem 0 .45rem 1rem;border-left:2px solid var(--border);cursor:pointer;font-size:.82rem;color:var(--slate);transition:all .2s;}
+    .tree-clause:hover{color:var(--navy);border-left-color:var(--navy);}
+    .tree-clause.selected{background:var(--navy-light);color:var(--navy);font-weight:600;}
+    .evidence-panel{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.08);max-height:700px;overflow-y:auto;}
+    .ev-num{font-size:1.4rem;font-weight:700;color:var(--gold);margin-bottom:.25rem;}
+    .ev-title{font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:.75rem;}
+    .ev-desc{background:var(--navy-light);padding:.85rem;border-radius:6px;margin-bottom:1.25rem;font-size:.88rem;border-left:3px solid var(--navy);}
+    .ev-section{margin-bottom:1.25rem;}
+    .ev-sec-title{font-weight:700;font-size:.82rem;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;}
+    .ev-item{background:var(--bg);padding:.65rem;border-radius:4px;margin-bottom:.4rem;border-left:3px solid var(--navy);font-size:.83rem;}
+    .ev-item-code{font-weight:600;color:var(--navy);}
+    .ev-item-desc{color:var(--slate);margin-top:.15rem;font-size:.79rem;}
+    .audit-note{background:var(--green-light);border:1px solid var(--green);padding:.85rem;border-radius:6px;margin-top:.85rem;font-size:.83rem;color:var(--green);}
+    .coverage-panel{background:#fff;border-radius:10px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,.08);max-height:700px;overflow-y:auto;}
+    .cov-hdr{font-weight:700;color:var(--navy);margin-bottom:.75rem;padding-bottom:.6rem;border-bottom:2px solid var(--border);}
+    .cov-count{font-size:1.5rem;font-weight:700;color:var(--gold);margin-bottom:1.25rem;}
+    .cov-item{padding:.45rem .65rem;border-bottom:1px solid var(--border);font-size:.82rem;display:flex;align-items:center;gap:.6rem;}
+    .cov-check{width:16px;height:16px;background:var(--green);color:#fff;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;}
+    .checklist-btn{width:100%;padding:.65rem;background:var(--navy);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;margin-top:.85rem;transition:background .25s;}
+    .checklist-btn:hover{background:var(--navy-mid);}
+
+    /* ── MODAL ── */
+    .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center;}
+    .modal.active{display:flex;}
+    .modal-inner{background:#fff;border-radius:10px;padding:1.75rem;max-width:580px;width:90%;max-height:80vh;overflow-y:auto;position:relative;}
+    .modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.4rem;cursor:pointer;}
+    .modal-title{font-size:1.3rem;font-weight:700;color:var(--navy);margin-bottom:1.25rem;}
+    .cl-item{display:flex;align-items:flex-start;gap:.65rem;margin-bottom:.75rem;padding:.65rem;background:var(--bg);border-radius:5px;}
+    .cl-checkbox{width:18px;height:18px;border:2px solid var(--navy);border-radius:3px;flex-shrink:0;margin-top:.15rem;}
+    .cl-id{font-weight:700;color:var(--navy);font-size:.85rem;}
+    .cl-title{color:var(--slate);font-size:.82rem;margin-top:.15rem;}
+
+    /* ── FOOTER ── */
+    .app-footer{background:#f5f5f5;padding:1.25rem 2rem;text-align:center;color:#888;font-size:.82rem;border-top:1px solid var(--border);margin-top:2rem;}
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:1200px){.three-panel{grid-template-columns:220px 1fr}}
+    @media(max-width:1024px){.grid-2,.two-panel,.three-panel{grid-template-columns:1fr}}
+    @media(max-width:768px){.metrics-row{grid-template-columns:1fr 1fr}.counter-grid{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <div>
+    <h1>⚗️ Vertex Analytical Labs</h1>
+    <p>Quality Management System Dashboard — ISO/IEC 17025:2017</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:1.5rem;">
+    <div class="header-badge">ISO/IEC 17025:2017 Compliance</div>
+    <div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:#fff;">
+      <div class="status-dot"></div>
+      <span>System Active</span>
+    </div>
+  </div>
+</div>
+
+<!-- PERSONA BAR -->
+<div class="persona-bar">
+  <button class="persona-btn active" data-persona="topMgmt">👔 Top Management</button>
+  <button class="persona-btn" data-persona="labMgmt">🏭 Lab Manager</button>
+  <button class="persona-btn" data-persona="qaMgr">📊 QA Manager</button>
+  <button class="persona-btn" data-persona="analyst">🧪 Analyst</button>
+  <button class="persona-btn" data-persona="customer">👥 Customer Support</button>
+  <button class="persona-btn" data-persona="auditor">📋 External Auditor</button>
+</div>
+
+<div class="main">
+
+<!-- ══════════════════════════════════════════════════════════
+     TOP MANAGEMENT VIEW
+═══════════════════════════════════════════════════════════ -->
+<div id="topMgmt" class="view active">
+  <div class="role-desc"><strong>Top Management:</strong> Strategic overview of QMS compliance, accreditation readiness, risk management, and organizational commitments.</div>
+
+  <!-- Row 1: QMS at a Glance + Radar -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">📋 QMS At a Glance</div>
+      <div class="counter-grid">
+        <div class="counter-item">
+          <div class="counter-icon">📋</div>
+          <div class="counter-number" data-target="32">0</div>
+          <div class="counter-label">Standard Operating<br>Procedures</div>
+        </div>
+        <div class="counter-item">
+          <div class="counter-icon">📄</div>
+          <div class="counter-number" data-target="86">0</div>
+          <div class="counter-label">Quality Records<br>&amp; Forms</div>
+        </div>
+        <div class="counter-item">
+          <div class="counter-icon">✓</div>
+          <div class="counter-number" data-target="34">0</div>
+          <div class="counter-label">ISO 17025:2017<br>Clauses Addressed</div>
+        </div>
+        <div class="counter-item">
+          <div class="counter-icon">⚙️</div>
+          <div class="counter-number" data-target="138">0</div>
+          <div class="counter-label">Documented<br>Processes</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📡 ISO 17025:2017 Section Coverage</div>
+      <div class="radar-wrap"><canvas id="radarChart" width="300" height="300"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 2: SOP Distribution + Compliance Statement -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">📊 SOP Distribution by Section</div>
+      <div style="height:260px;"><canvas id="distChart" width="400" height="260"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏆 Compliance Statement</div>
+      <div class="compliance-stmt">
+        Vertex Analytical Labs has designed and implemented its Quality Management System in full conformance with ISO/IEC 17025:2017. 34 of 35 clauses are addressed through 32 Standard Operating Procedures, supported by 86 documented forms and records. The system covers all phases of laboratory activity from contract review through result reporting, and establishes clear processes for personnel competency, equipment management, metrological traceability, and continual improvement. One minor gap (Clause 7.3 – Sampling) is scheduled for resolution by April 30, 2026.
+      </div>
+    </div>
+  </div>
+
+  <!-- Compliance cards -->
+  <div class="sec-title">Strategic Compliance Status</div>
+  <div class="grid-auto">
+    <div class="badge-card full">
+      <div style="display:flex;align-items:center;"><span class="clause-num">4.1–4.2</span><span class="cbadge full">✓ Full</span></div>
+      <h4>Impartiality &amp; Confidentiality</h4>
+      <p>POL-02 in force; ethics code signed by all personnel; conflict-of-interest controls quarterly; customer data access-controlled.</p>
+      <div class="sop-ref">📄 POL-02 · QP-15</div>
+    </div>
+    <div class="badge-card full">
+      <div style="display:flex;align-items:center;"><span class="clause-num">5.x</span><span class="cbadge full">✓ Full</span></div>
+      <h4>Organizational Structure</h4>
+      <p>Clear hierarchy: Lab Director (A. Elias), QA Manager (J. Maldonado), Lab Manager (I. Gonzalez). Responsibilities formally documented.</p>
+      <div class="sop-ref">📄 Quality Manual §5 · QP-01</div>
+    </div>
+    <div class="badge-card full">
+      <div style="display:flex;align-items:center;"><span class="clause-num">8.5</span><span class="cbadge full">✓ Full</span></div>
+      <h4>Risk Management (FMEA)</h4>
+      <p>FMEA-based risk assessment quarterly; documented actions tracked to closure; effectiveness verified at management review.</p>
+      <div class="sop-ref">📄 QP-15 · FE-QP15.01</div>
+    </div>
+    <div class="badge-card full">
+      <div style="display:flex;align-items:center;"><span class="clause-num">8.9</span><span class="cbadge full">✓ Full</span></div>
+      <h4>Management Review Cycle</h4>
+      <p>Semi-annual reviews with documented agenda, decisions, and follow-up actions. Next review: Q2 2026.</p>
+      <div class="sop-ref">📄 QP-18 · FM QP18.01–03</div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline-wrap">
+    <div class="card-title" style="margin-bottom:1.5rem;">🗓️ QMS Implementation &amp; Accreditation Timeline</div>
+    <div class="timeline">
+      <div class="timeline-items">
+        <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-label">SOP Development</div><div class="timeline-year">2023</div></div>
+        <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-label">Equipment Calibration</div><div class="timeline-year">2024</div></div>
+        <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-label">Personnel Training</div><div class="timeline-year">2024</div></div>
+        <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-label">QM Rev 02 Released</div><div class="timeline-year">May 2024</div></div>
+        <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-label">Internal Audit</div><div class="timeline-year">Jun 2026</div></div>
+        <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-label">External Assessment</div><div class="timeline-year">Jul 2026</div></div>
+        <div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-label">Accreditation</div><div class="timeline-year">Q3 2026</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-box" style="margin-top:1.5rem;"><strong>⚠ Action Required:</strong> Complete SOP-07 (Sampling Procedures) by April 30, 2026 — Owner: Lab Manager (I. Gonzalez)</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     LAB MANAGER VIEW
+═══════════════════════════════════════════════════════════ -->
+<div id="labMgmt" class="view">
+  <div class="role-desc"><strong>Lab Manager:</strong> Operational compliance, resource management, procedure implementation. Click any SOP card to view details, process steps, and relationships.</div>
+
+  <div class="metrics-row">
+    <div class="metric"><div class="num">32</div><div class="lbl">Active SOPs</div></div>
+    <div class="metric"><div class="num">6</div><div class="lbl">Equipment Procedures</div></div>
+    <div class="metric"><div class="num">8</div><div class="lbl">Laboratory Procedures</div></div>
+    <div class="metric"><div class="num">18</div><div class="lbl">Quality Procedures</div></div>
+    <div class="metric"><div class="num">86</div><div class="lbl">Total Forms &amp; Records</div></div>
+    <div class="metric"><div class="num">138</div><div class="lbl">Documented Processes</div></div>
+  </div>
+
+  <div class="two-panel">
+    <div class="sop-list" id="sopListContainer">
+      <p style="font-size:.8rem;color:var(--slate);margin-bottom:.85rem;">Click a procedure to view processes, forms, and relationships →</p>
+    </div>
+    <div class="sop-detail-pane" id="sopDetailPane">
+      <div style="text-align:center;color:var(--slate);padding:3rem 1rem;">
+        <div style="font-size:3rem;margin-bottom:1rem;">📋</div>
+        <p>Select a procedure from the list to view details, process steps, trigger/frequency, and SOP relationships.</p>
+      </div>
+      <div class="network-box">
+        <div class="network-title">SOP Relationships Network</div>
+        <div id="networkViz" style="width:100%;height:280px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     QA MANAGER VIEW
+═══════════════════════════════════════════════════════════ -->
+<div id="qaMgr" class="view">
+  <div class="role-desc"><strong>QA Manager:</strong> Clause-by-clause compliance matrix. Click any ✓ cell to see which SOP covers it and which forms provide evidence. Click a row header to highlight all clauses covered by that SOP.</div>
+
+  <div class="metrics-row">
+    <div class="metric"><div class="num">34/35</div><div class="lbl">Clauses Addressed</div></div>
+    <div class="metric"><div class="num">1</div><div class="lbl">Minor Gap (§7.3)</div></div>
+    <div class="metric"><div class="num">86</div><div class="lbl">Forms &amp; Records</div></div>
+    <div class="metric"><div class="num">100%</div><div class="lbl">Documentation Rate</div></div>
+  </div>
+
+  <div class="sec-title">Vertex QMS → ISO 17025:2017 Clause-to-Clause Map</div>
+  <div class="search-bar"><input type="text" id="matrixSearch" placeholder="Search SOP or clause (e.g. QP-07, 7.2, Uncertainty)…"></div>
+  <div class="matrix-wrap">
+    <table class="comp-matrix" id="compMatrix">
+      <thead id="matrixHead"></thead>
+      <tbody id="matrixBody"></tbody>
+    </table>
+  </div>
+
+  <div class="hl-box">
+    <h4>Gap Action</h4>
+    <ul>
+      <li>§7.3 Sampling — partially addressed in QP-06 (contract review) and LP-01 (lab safety). Dedicated SOP-07 due April 30, 2026.</li>
+    </ul>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     ANALYST VIEW
+═══════════════════════════════════════════════════════════ -->
+<div id="analyst" class="view">
+  <div class="role-desc"><strong>Analyst / Chemist:</strong> Task-based guidance. Search for what you are doing today or click an activity card to see the exact SOP steps, forms, and sequence to follow.</div>
+
+  <div class="search-prompt">
+    <div class="search-prompt-title">What are you doing today?</div>
+    <div class="search-wrap">
+      <input type="text" id="activitySearch" class="search-lg" placeholder="Start typing an activity…">
+      <div class="autocomplete" id="autocomplete"></div>
+    </div>
+  </div>
+
+  <div id="expandedActArea"></div>
+  <div class="activity-grid" id="activityGrid"></div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     CUSTOMER SUPPORT VIEW
+═══════════════════════════════════════════════════════════ -->
+<div id="customer" class="view">
+  <div class="role-desc"><strong>Customer Support:</strong> Service standards, complaint resolution, confidentiality commitments, and contact information.</div>
+
+  <div class="metrics-row">
+    <div class="metric"><div class="num">24 h</div><div class="lbl">Complaint Acknowledgment</div></div>
+    <div class="metric"><div class="num">100%</div><div class="lbl">Confidentiality Assurance</div></div>
+    <div class="metric"><div class="num">ISO 17025</div><div class="lbl">Accreditation Standard</div></div>
+    <div class="metric"><div class="num">Q3 2026</div><div class="lbl">Accreditation Target</div></div>
+  </div>
+
+  <div class="sec-title">Service Standards</div>
+  <div class="grid-auto">
+    <div class="badge-card full">
+      <div style="display:flex;align-items:center;"><span class="clause-num">7.1</span><span class="cbadge full">✓ Full</span></div>
+      <h4>Service Requests &amp; Contracts</h4>
+      <p>Systematic review with 24 h quotation; scope, timeline, and requirements confirmed before work begins.</p>
+      <div class="sop-ref">📄 QP-06 · FM QP06.02 · FM QP06.04</div>
+    </div>
+    <div class="badge-card full">
+      <div style="display:flex;align-items:center;"><span class="clause-num">7.8</span><span class="cbadge full">✓ Full</span></div>
+      <h4>Reporting of Results</h4>
+      <p>Professional reports include measurement uncertainty, method references, and QA approval signature before release.</p>
+      <div class="sop-ref">📄 QP-11</div>
+    </div>
+    <div class="badge-card full">
+      <div style="display:flex;align-items:center;"><span class="clause-num">7.9</span><span class="cbadge full">✓ Full</span></div>
+      <h4>Complaint Handling</h4>
+      <p>Acknowledgment within 24 hours; formal investigation; root-cause resolution; written closure notification.</p>
+      <div class="sop-ref">📄 QP-12 · FM QP12.01–04</div>
+    </div>
+    <div class="badge-card full">
+      <div style="display:flex;align-items:center;"><span class="clause-num">4.2</span><span class="cbadge full">✓ Full</span></div>
+      <h4>Data Confidentiality</h4>
+      <p>Secured OneDrive storage, locked cabinets, legally-enforceable NDAs in service agreements.</p>
+      <div class="sop-ref">📄 POL-02 · FM QP06.04</div>
+    </div>
+  </div>
+
+  <div class="action-box">
+    <strong>Contact:</strong> customersupport@vertexanalytical.com · +1 888-316-14 · 9335 Airway Rd, Suite 208, San Diego, CA 92154
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     EXTERNAL AUDITOR VIEW
+═══════════════════════════════════════════════════════════ -->
+<div id="auditor" class="view">
+  <div style="background:var(--navy);color:#fff;padding:1.25rem 1.5rem;border-radius:8px;margin-bottom:1.5rem;border-left:4px solid var(--gold);font-size:.92rem;line-height:1.6;">
+    ✓ This Quality Management System implements all requirements of ISO/IEC 17025:2017 Option A. Select a clause in the tree to view implementation evidence and documentary records.
+  </div>
+
+  <div class="three-panel">
+    <div class="clause-tree" id="clauseTree"></div>
+    <div class="evidence-panel" id="evidencePanel">
+      <div style="text-align:center;color:var(--slate);padding:2.5rem 1rem;">Select a clause from the tree to view evidence</div>
+    </div>
+    <div class="coverage-panel">
+      <div class="cov-hdr">Coverage Summary</div>
+      <div class="cov-count" id="covCount">34 / 35</div>
+      <div id="covList"></div>
+      <button class="checklist-btn" id="checklistBtn">Generate Audit Checklist</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- DETAIL PANEL -->
+<div class="detail-panel" id="detailPanel">
+  <button class="panel-close" id="panelClose">×</button>
+  <div id="detailContent"></div>
+</div>
+
+<!-- CHECKLIST MODAL -->
+<div class="modal" id="checklistModal">
+  <div class="modal-inner">
+    <button class="modal-close" id="modalClose">×</button>
+    <div class="modal-title">ISO 17025:2017 Audit Checklist — Vertex Analytical Labs</div>
+    <div id="checklistBody"></div>
+    <button class="checklist-btn" onclick="window.print()">🖨 Print Checklist</button>
+  </div>
+</div>
+
+<!-- APP FOOTER -->
+<div class="app-footer">
+  <strong>Vertex Analytical Labs LLC</strong> · 9335 Airway Road Suite 208, San Diego CA 92154 · quality@vertexanalytical.com · +1 888-316-14<br>
+  QMS Dashboard v03 · ISO/IEC 17025:2017 · Last Updated: March 28, 2026
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA MODEL — Vertex Analytical Labs
+// ═══════════════════════════════════════════════
+const QMS = {
+  lab:{name:"Vertex Analytical Labs",std:"ISO/IEC 17025:2017",sopCount:32,formCount:86,clauseCount:34,processCount:138},
+
+  sections:[
+    {id:4,name:"General Requirements",     color:"#7C3AED"},
+    {id:5,name:"Structural Requirements",  color:"#0D9488"},
+    {id:6,name:"Resource Requirements",    color:"#1D4ED8"},
+    {id:7,name:"Process Requirements",     color:"#B45309"},
+    {id:8,name:"Management Requirements",  color:"#15803D"}
+  ],
+
+  clauses:[
+    {id:"4.1", s:4, title:"Impartiality",                         sops:["QM","QP-01","QP-15"],            forms:["POL-02","FM QP01.05","Ethics Code"]},
+    {id:"4.2", s:4, title:"Confidentiality",                      sops:["QM","QP-14"],                    forms:["FM QP06.04","FM QP14.01"]},
+    {id:"5.1", s:5, title:"Legal Entity & Structure",             sops:["QM"],                            forms:["LLC Registration","Org Chart"]},
+    {id:"5.2", s:5, title:"Management Commitment",                sops:["QM","QP-18"],                    forms:["Quality Policy","FM QP18.02"]},
+    {id:"5.3", s:5, title:"Scope of Accredited Activities",       sops:["QM"],                            forms:["Accreditation Scope","QM §5.3"]},
+    {id:"5.4", s:5, title:"Responsibility for Compliance",        sops:["QM"],                            forms:["QM §5.4","Org Chart"]},
+    {id:"5.5", s:5, title:"Organizational Structure",             sops:["QM","QP-01"],                    forms:["Org Chart","FM QP01.01"]},
+    {id:"6.1", s:6, title:"General Resources",                    sops:["QM","QP-01","QP-02"],            forms:["FM QP01.01","FM QP02.01"]},
+    {id:"6.2", s:6, title:"Personnel",                            sops:["QP-01"],                         forms:["FM QP01.01","FM QP01.02","FM QP01.03","FM QP01.04","FM QP01.05"]},
+    {id:"6.3", s:6, title:"Facilities & Environment",             sops:["QP-02"],                         forms:["FM QP02.01","FM QP02.02","FM QP02.03","FM QP02.04","FM QP02.05"]},
+    {id:"6.4", s:6, title:"Equipment",                            sops:["QP-03","EP-01","EP-02","EP-03","EP-04","EP-05","EP-06"], forms:["FM QP03.01","FM QP03.02","FM QP03.03","Calibration Certs"]},
+    {id:"6.5", s:6, title:"Metrological Traceability",            sops:["QP-04","LP-05","LP-06","LP-07","LP-08"], forms:["FM QP04.01","FM QP04.02","FM QP04.03","Calibration Certs"]},
+    {id:"6.6", s:6, title:"Externally Provided Products & Svcs",  sops:["QP-05"],                         forms:["FM QP05.01","FM QP05.02","FM QP05.03","QA Agreement"]},
+    {id:"7.1", s:7, title:"Review of Requests & Contracts",       sops:["QP-06"],                         forms:["FM QP06.01","FM QP06.02","FM QP06.04"]},
+    {id:"7.2", s:7, title:"Selection & Validation of Methods",    sops:["QP-07","LP-04"],                 forms:["FM QP07.01","FM QP07.02","FM QP07.03","FM LP04.01"]},
+    {id:"7.3", s:7, title:"Sampling",                             sops:["QP-06","LP-01"],                 forms:["FM QP06.01 (partial)"]},
+    {id:"7.4", s:7, title:"Handling of Test Items",               sops:["QP-08"],                         forms:["FM QP08.01","FM QP08.02","FM QP08.03","FM QP08.04","FM QP08.05"]},
+    {id:"7.5", s:7, title:"Technical Records",                    sops:["QP-08","QP-14"],                 forms:["FM QP08.04","FM QP14.01","FM QP14.05"]},
+    {id:"7.6", s:7, title:"Evaluation of Measurement Uncertainty",sops:["QP-09"],                         forms:["FM QP09.01","FM QP09.02","FM QP09.03"]},
+    {id:"7.7", s:7, title:"Ensuring Validity of Results",         sops:["QP-10"],                         forms:["FM QP10.01","FM QP10.02","FM QP10.03","FM QP10.04"]},
+    {id:"7.8", s:7, title:"Reporting of Results",                 sops:["QP-11"],                         forms:["FM QP11.01","FM QP11.02","FM QP11.03","FM QP11.04"]},
+    {id:"7.9", s:7, title:"Complaints",                           sops:["QP-12"],                         forms:["FM QP12.01","FM QP12.02","FM QP12.03","FM QP12.04"]},
+    {id:"7.10",s:7, title:"Nonconforming Work",                   sops:["QP-13","LP-03"],                 forms:["FM QP13.01","FM QP13.02","FM QP13.03","FM QP13.04"]},
+    {id:"7.11",s:7, title:"Data & Information Management",        sops:["QP-14"],                         forms:["FM QP14.01","FM QP14.04","FM QP14.05"]},
+    {id:"8.1", s:8, title:"QMS Options (Option A selected)",      sops:["QM"],                            forms:["QM §8.1","ISO Clause Matrix"]},
+    {id:"8.2", s:8, title:"QMS Documentation",                    sops:["QM","QP-14"],                    forms:["QM","FM QP14.01","ISO Clause Matrix"]},
+    {id:"8.3", s:8, title:"Control of Documents",                 sops:["QP-14"],                         forms:["FM QP14.01","FM QP14.02","FM QP14.05"]},
+    {id:"8.4", s:8, title:"Control of Records",                   sops:["QP-14"],                         forms:["FM QP14.01","FM QP14.03","FM QP14.04"]},
+    {id:"8.5", s:8, title:"Risks & Opportunities",                sops:["QP-15"],                         forms:["FM QP15.01","FM QP15.02","FE-QP15.01"]},
+    {id:"8.6", s:8, title:"Improvement",                          sops:["QP-15","QP-16"],                 forms:["FM QP15.01","FM QP16.01"]},
+    {id:"8.7", s:8, title:"Corrective Actions",                   sops:["QP-16"],                         forms:["FM QP16.01","FM QP16.02","FM QP16.03","FM QP16.04"]},
+    {id:"8.8", s:8, title:"Internal Audits",                      sops:["QP-17"],                         forms:["FM QP17.01","FM QP17.02","FM QP17.03","FM QP17.04"]},
+    {id:"8.9", s:8, title:"Management Reviews",                   sops:["QP-18"],                         forms:["FM QP18.01","FM QP18.02","FM QP18.03"]}
+  ],
+
+  sops:[
+    {id:"QM",    num:"QM",    title:"Quality Manual",                              clause:"All",     sec:4, owner:"Lab Director",   freq:"Annual Review",        processes:6,  forms:4,  color:"#7C3AED"},
+    {id:"QP-01", num:"QP-01", title:"Management of Personnel",                    clause:"6.2",     sec:6, owner:"QA Manager",     freq:"Per Event / Hire",     processes:8,  forms:5,  color:"#1D4ED8"},
+    {id:"QP-02", num:"QP-02", title:"Facilities & Environmental Conditions",      clause:"6.3",     sec:6, owner:"Lab Manager",    freq:"Daily Monitoring",     processes:7,  forms:5,  color:"#1D4ED8"},
+    {id:"QP-03", num:"QP-03", title:"Management of Equipment",                    clause:"6.4",     sec:6, owner:"Lab Manager",    freq:"Per Equipment",        processes:8,  forms:5,  color:"#1D4ED8"},
+    {id:"QP-04", num:"QP-04", title:"Metrological Traceability",                  clause:"6.5",     sec:6, owner:"QA Manager",     freq:"Per Reference Mat.",   processes:7,  forms:4,  color:"#1D4ED8"},
+    {id:"QP-05", num:"QP-05", title:"Externally Provided Products & Services",    clause:"6.6",     sec:6, owner:"Lab Manager",    freq:"Per Purchase",         processes:7,  forms:4,  color:"#1D4ED8"},
+    {id:"QP-06", num:"QP-06", title:"Review of Requests, Tenders & Contracts",   clause:"7.1",     sec:7, owner:"Lab Manager",    freq:"Per Contract",         processes:7,  forms:3,  color:"#B45309"},
+    {id:"QP-07", num:"QP-07", title:"Test Methods",                               clause:"7.2",     sec:7, owner:"QA Manager",     freq:"Per Method / Annual",  processes:8,  forms:5,  color:"#B45309"},
+    {id:"QP-08", num:"QP-08", title:"Management of Samples",                      clause:"7.4",     sec:7, owner:"Lab Manager",    freq:"Per Sample",           processes:8,  forms:5,  color:"#B45309"},
+    {id:"QP-09", num:"QP-09", title:"Evaluation of Measurement Uncertainty",      clause:"7.6",     sec:7, owner:"QA Manager",     freq:"Per Method / Annual",  processes:7,  forms:3,  color:"#B45309"},
+    {id:"QP-10", num:"QP-10", title:"Validity of Test Results",                   clause:"7.7",     sec:7, owner:"QA Manager",     freq:"Per Batch",            processes:8,  forms:4,  color:"#B45309"},
+    {id:"QP-11", num:"QP-11", title:"Reporting of Results",                       clause:"7.8",     sec:7, owner:"Lab Manager",    freq:"Per Report",           processes:8,  forms:4,  color:"#B45309"},
+    {id:"QP-12", num:"QP-12", title:"Management of Complaints & Feedback",        clause:"7.9",     sec:7, owner:"QA Manager",     freq:"Per Event",            processes:8,  forms:4,  color:"#B45309"},
+    {id:"QP-13", num:"QP-13", title:"Management of Nonconforming Work",           clause:"7.10",    sec:7, owner:"Lab Manager",    freq:"Per Event",            processes:9,  forms:4,  color:"#B45309"},
+    {id:"QP-14", num:"QP-14", title:"Control of Management System Documents",     clause:"8.3/8.4", sec:8, owner:"QA Manager",     freq:"Per Change",           processes:9,  forms:5,  color:"#15803D"},
+    {id:"QP-15", num:"QP-15", title:"Actions to Address Risks & Opportunities",   clause:"8.5",     sec:8, owner:"QA Manager",     freq:"Semi-Annual (FMEA)",   processes:8,  forms:3,  color:"#15803D"},
+    {id:"QP-16", num:"QP-16", title:"Corrective Actions",                         clause:"8.7",     sec:8, owner:"QA Manager",     freq:"Per Event",            processes:9,  forms:4,  color:"#15803D"},
+    {id:"QP-17", num:"QP-17", title:"Audits",                                     clause:"8.8",     sec:8, owner:"QA Manager",     freq:"Annual Program",       processes:9,  forms:4,  color:"#15803D"},
+    {id:"QP-18", num:"QP-18", title:"Management Reviews",                         clause:"8.9",     sec:8, owner:"Lab Director",   freq:"Semi-Annual",          processes:8,  forms:3,  color:"#15803D"},
+    {id:"EP-01", num:"EP-01", title:"Use, Maintenance & Checks of Balances",      clause:"6.4",     sec:6, owner:"Lab Manager",    freq:"Per Use / Daily",      processes:5,  forms:3,  color:"#0891b2"},
+    {id:"EP-02", num:"EP-02", title:"Use, Maintenance & Checks of Micropipettes", clause:"6.4",     sec:6, owner:"Lab Manager",    freq:"Per Use / Quarterly",  processes:5,  forms:3,  color:"#0891b2"},
+    {id:"EP-03", num:"EP-03", title:"Use, Maintenance & Checks of Thermometers",  clause:"6.4",     sec:6, owner:"Lab Manager",    freq:"Per Use / Monthly",    processes:4,  forms:3,  color:"#0891b2"},
+    {id:"EP-04", num:"EP-04", title:"Use, Maintenance & Checks of pH Meters",     clause:"6.4",     sec:6, owner:"Lab Manager",    freq:"Per Use / Daily Cal.", processes:5,  forms:3,  color:"#0891b2"},
+    {id:"EP-05", num:"EP-05", title:"Use, Maintenance & Checks of Temp Chambers", clause:"6.4",     sec:6, owner:"Lab Manager",    freq:"Continuous / Daily",   processes:5,  forms:3,  color:"#0891b2"},
+    {id:"EP-06", num:"EP-06", title:"Operation & Maintenance of HPLC Systems",    clause:"6.4",     sec:6, owner:"Lab Manager",    freq:"Per Analysis / Weekly",processes:7,  forms:4,  color:"#0891b2"},
+    {id:"LP-01", num:"LP-01", title:"Laboratory Safety",                           clause:"7.4",     sec:7, owner:"Lab Manager",    freq:"Ongoing / Daily",      processes:6,  forms:3,  color:"#dc2626"},
+    {id:"LP-02", num:"LP-02", title:"Analytical Data — Interpretation & Treatment",clause:"7.7",     sec:7, owner:"Lab Manager",    freq:"Per Analysis",         processes:6,  forms:3,  color:"#dc2626"},
+    {id:"LP-03", num:"LP-03", title:"Management of Out-of-Specification Results", clause:"7.10",    sec:7, owner:"QA Manager",     freq:"Per Event",            processes:7,  forms:4,  color:"#dc2626"},
+    {id:"LP-04", num:"LP-04", title:"Validation of Spreadsheets",                 clause:"7.2",     sec:7, owner:"QA Manager",     freq:"Per New Spreadsheet",  processes:5,  forms:3,  color:"#dc2626"},
+    {id:"LP-05", num:"LP-05", title:"Management of Reference Materials",           clause:"6.5",     sec:6, owner:"QA Manager",     freq:"Per Lot / Annual",     processes:6,  forms:4,  color:"#dc2626"},
+    {id:"LP-06", num:"LP-06", title:"Management of Reagents & Prepared Solutions", clause:"6.5",     sec:6, owner:"Lab Manager",    freq:"Per Preparation",      processes:6,  forms:3,  color:"#dc2626"},
+    {id:"LP-07", num:"LP-07", title:"Management of Volumetric Glassware",          clause:"6.5",     sec:6, owner:"Lab Manager",    freq:"Per Use / Annual Cal.",processes:5,  forms:3,  color:"#dc2626"},
+    {id:"LP-08", num:"LP-08", title:"Management of HPLC Columns",                 clause:"6.5",     sec:6, owner:"Lab Manager",    freq:"Per Column / Batch",   processes:5,  forms:3,  color:"#dc2626"}
+  ],
+
+  analystActivities:[
+    {icon:"🧪", activity:"I need to perform a test",          desc:"Receive sample, apply QC controls, record results, issue report.",  sops:["QP-08","QP-10","LP-02","QP-11"]},
+    {icon:"⚖️", activity:"I am calibrating an instrument",   desc:"Performance check → document → establish traceability chain.",     sops:["QP-03","QP-04","EP-01"]},
+    {icon:"⚠️", activity:"I found an out-of-specification result", desc:"OOS investigation → NC report → corrective action chain.",    sops:["LP-02","LP-03","QP-13","QP-16"]},
+    {icon:"📐", activity:"I need to verify or validate a method", desc:"Verification plan → key parameters → measurement uncertainty.", sops:["QP-07","QP-09","LP-04"]},
+    {icon:"📦", activity:"I received a damaged or anomalous sample", desc:"Anomaly record → customer contact → authorization to proceed.", sops:["QP-08","QP-06"]},
+    {icon:"📄", activity:"I need to prepare a test report",   desc:"Data review → MU inclusion → QA approval → issue to customer.",   sops:["QP-11","QP-09"]},
+    {icon:"🔧", activity:"Equipment failed an intermediate check", desc:"Remove from service → impact assessment → corrective action.",  sops:["QP-03","QP-13","QP-16"]},
+    {icon:"📞", activity:"A customer complaint was received",  desc:"Record → assign investigator → resolve → formal closure.",       sops:["QP-12","QP-16"]},
+    {icon:"🛒", activity:"I need to order reagents or supplies", desc:"Check approved supplier list → PO → receive → inspect.",        sops:["QP-05","LP-06"]},
+    {icon:"🌡️", activity:"Environmental conditions are out of range", desc:"OOS record → halt if needed → investigate → resume.",     sops:["QP-02","QP-13"]},
+    {icon:"📋", activity:"I need to reference or use a document", desc:"Check document register → use only current revision.",         sops:["QP-14"]},
+    {icon:"🔬", activity:"I am running proficiency testing",   desc:"PT sample analysis → z-score evaluation → CA if needed.",        sops:["QP-10","QP-09"]},
+    {icon:"🧫", activity:"I am preparing reference solutions", desc:"Verify RM certificate → prepare → label → record expiry.",       sops:["LP-05","LP-06","QP-04"]},
+    {icon:"🏺", activity:"I need to use volumetric glassware", desc:"Check calibration status → use → record → return to storage.",   sops:["LP-07"]},
+    {icon:"💻", activity:"I need to create a new calculation spreadsheet", desc:"Design → validate → approve before use in testing.",  sops:["LP-04"]},
+    {icon:"🔬", activity:"I am running HPLC analysis",        desc:"Column log → system suitability → run sequence → review data.",   sops:["EP-06","LP-08","QP-10"]}
+  ],
+
+  relationships:[
+    {source:"QP-10",target:"QP-13"},{source:"QP-13",target:"QP-16"},
+    {source:"QP-16",target:"QP-15"},{source:"QP-02",target:"QP-13"},
+    {source:"QP-03",target:"QP-13"},{source:"QP-12",target:"QP-16"},
+    {source:"QP-07",target:"QP-09"},{source:"QP-08",target:"QP-11"},
+    {source:"QP-17",target:"QP-16"},{source:"QP-18",target:"QP-15"},
+    {source:"LP-03",target:"QP-13"},{source:"LP-02",target:"LP-03"},
+    {source:"QP-09",target:"QP-11"},{source:"QP-06",target:"QP-08"}
+  ],
+
+  clauseDescriptions:{
+    "4.1":"The laboratory must demonstrate impartiality in all activities and resist commercial, financial, or other pressures that could compromise objectivity.",
+    "4.2":"Confidentiality of customer information and test results must be protected through documented procedures and access controls.",
+    "5.1":"The laboratory must be a legally established entity with a clearly defined scope of activities.",
+    "5.2":"Top management must demonstrate commitment to quality through policy statements and resource allocation.",
+    "5.3":"The laboratory must formally define the scope of its accredited activities.",
+    "5.4":"Management must accept full responsibility for compliance with the standard and relevant regulations.",
+    "5.5":"Organizational structure, lines of authority, and interrelationships of all personnel must be documented.",
+    "6.1":"The laboratory must provide adequate resources including personnel, facilities, equipment, and support services.",
+    "6.2":"Personnel must be competent, qualified, trained, and authorized for their assigned tasks.",
+    "6.3":"Facilities and environmental conditions must be suitable, controlled, and monitored for testing activities.",
+    "6.4":"All equipment must be calibrated, maintained, and confirmed fit for intended use.",
+    "6.5":"All measurements must be traceable to national or international standards through an unbroken chain.",
+    "6.6":"Externally provided products and services must be evaluated, approved, and monitored.",
+    "7.1":"Customer requests and contracts must be reviewed for feasibility, capability, and clarity before acceptance.",
+    "7.2":"Test methods must be selected, verified (standard), or validated (non-standard) before use.",
+    "7.3":"Sampling procedures must be documented to ensure representative and reproducible samples.",
+    "7.4":"Test items must be handled, stored, and transported to prevent damage or deterioration.",
+    "7.5":"Technical records of all activities, results, and observations must be complete, traceable, and legible.",
+    "7.6":"Measurement uncertainty must be evaluated, documented, and reported with test results.",
+    "7.7":"Validity of results must be monitored through IQC, proficiency testing, or inter-laboratory comparisons.",
+    "7.8":"Test reports must contain all required information and be clear, accurate, and objective.",
+    "7.9":"Customer complaints must be investigated, resolved, and documented with follow-up verification.",
+    "7.10":"Nonconforming work must be identified, contained, investigated, and corrected with CA initiated.",
+    "7.11":"Data and information systems must be validated, secured, and backed up appropriately.",
+    "8.1":"The laboratory must implement either Option A (requirements of the standard) or Option B (ISO 9001 aligned).",
+    "8.2":"Policies, objectives, and procedures for the QMS must be documented and communicated.",
+    "8.3":"Documents must be controlled to ensure only current, approved versions are in use.",
+    "8.4":"Records must be retained, protected, and archived according to defined schedules.",
+    "8.5":"Risks and opportunities must be systematically identified and addressed through planned actions.",
+    "8.6":"Improvement opportunities must be pursued through analysis of data, feedback, and audits.",
+    "8.7":"Root causes of nonconformities must be identified and corrective actions implemented and verified.",
+    "8.8":"Internal audits must verify QMS conformity and effectiveness on a planned schedule.",
+    "8.9":"Management reviews must assess QMS performance and determine improvements."
+  }
+};
+
+// ═══════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════
+function sopById(id){return QMS.sops.find(s=>s.id===id)||{num:id,title:id,forms:0,processes:0,freq:"—"};}
+function secColor(secId){const s=QMS.sections.find(x=>x.id===secId);return s?s.color:"#475569";}
+
+function animateCounter(el,target,dur=1200){
+  const start=performance.now();
+  (function tick(t){
+    const p=Math.min((t-start)/dur,1);
+    el.textContent=Math.round((1-Math.pow(1-p,3))*target);
+    if(p<1)requestAnimationFrame(tick);
+  })(start);
+}
+
+// ═══════════════════════════════════════════════
+// TOP MANAGEMENT RENDER
+// ═══════════════════════════════════════════════
+function renderTopMgmt(){
+  document.querySelectorAll('#topMgmt .counter-number').forEach(el=>{
+    animateCounter(el,parseInt(el.dataset.target));
+  });
+  drawRadar(document.getElementById('radarChart'));
+  drawDist(document.getElementById('distChart'));
+}
+
+function drawRadar(canvas){
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d'),cx=canvas.width/2,cy=canvas.height/2;
+  const r=Math.min(cx,cy)*0.68,sides=5,ang=(2*Math.PI)/sides;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let level=0.25;level<=1;level+=0.25){
+    ctx.beginPath();
+    for(let i=0;i<=sides;i++){
+      const x=cx+r*level*Math.cos(i*ang-Math.PI/2),y=cy+r*level*Math.sin(i*ang-Math.PI/2);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle='#E2E8F0';ctx.lineWidth=1;ctx.stroke();
+  }
+  for(let i=0;i<sides;i++){
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+r*Math.cos(i*ang-Math.PI/2),cy+r*Math.sin(i*ang-Math.PI/2));
+    ctx.strokeStyle='#CBD5E1';ctx.lineWidth=1;ctx.stroke();
+  }
+  const data=[1,1,1,0.97,1];
+  ctx.beginPath();
+  data.forEach((v,i)=>{
+    const x=cx+r*v*Math.cos(i*ang-Math.PI/2),y=cy+r*v*Math.sin(i*ang-Math.PI/2);
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.closePath();ctx.fillStyle='rgba(0,61,122,0.2)';ctx.fill();
+  ctx.strokeStyle='#003d7a';ctx.lineWidth=3;ctx.stroke();
+  const labels=['§4 General','§5 Structural','§6 Resources','§7 Process','§8 Management'];
+  labels.forEach((lbl,i)=>{
+    const x=cx+(r+28)*Math.cos(i*ang-Math.PI/2),y=cy+(r+28)*Math.sin(i*ang-Math.PI/2);
+    ctx.fillStyle='#003d7a';ctx.font='bold 10px Segoe UI';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(lbl,x,y);
+  });
+}
+
+function drawDist(canvas){
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const data=[{l:'§4 General',v:1,c:'#7C3AED'},{l:'§5 Structural',v:1,c:'#0D9488'},{l:'§6 Resources',v:10,c:'#1D4ED8'},{l:'§7 Process',v:13,c:'#B45309'},{l:'§8 Management',v:7,c:'#15803D'}];
+  const maxV=14,bh=38,pad=55,width=canvas.width;
+  ctx.clearRect(0,0,width,canvas.height);
+  data.forEach((d,i)=>{
+    const y=10+i*bh,bw=(d.v/maxV)*(width-pad-50);
+    ctx.fillStyle=d.c;ctx.fillRect(pad,y,bw,bh-5);
+    ctx.fillStyle='#003d7a';ctx.font='bold 10px Segoe UI';ctx.textAlign='right';
+    ctx.fillText(d.v+' SOPs',pad-5,y+bh/2-2);
+    ctx.fillStyle='#fff';ctx.font='bold 9px Segoe UI';ctx.textAlign='left';
+    if(bw>40)ctx.fillText(d.l,pad+6,y+bh/2-2);
+    else{ctx.fillStyle='#003d7a';ctx.fillText(d.l,bw+pad+5,y+bh/2-2);}
+  });
+}
+
+// ═══════════════════════════════════════════════
+// LAB MANAGER RENDER
+// ═══════════════════════════════════════════════
+function renderLabMgmt(){
+  const cont=document.getElementById('sopListContainer');
+  cont.innerHTML='<p style="font-size:.8rem;color:var(--slate);margin-bottom:.85rem;">Click a procedure →</p>';
+  QMS.sops.forEach(sop=>{
+    const div=document.createElement('div');
+    div.className='sop-card';
+    div.innerHTML=`
+      <span class="sop-chip" style="background:${sop.color}">${sop.num}</span>
+      <div class="sop-title">${sop.title}</div>
+      <div class="sop-meta">
+        <span>📋 ISO §${sop.clause}</span>
+        <span>👤 ${sop.owner}</span>
+        <span>⏱ ${sop.freq}</span>
+      </div>
+      <div class="sop-stats">
+        <span>⚙️ ${sop.processes} processes</span>
+        <span>📄 ${sop.forms} forms</span>
+      </div>`;
+    div.addEventListener('click',()=>selectSOP(sop,div));
+    cont.appendChild(div);
+  });
+  // draw initial network
+  setTimeout(()=>{
+    const el=document.getElementById('networkViz');
+    if(el&&el.clientWidth>0)drawNetwork(el,null);
+  },50);
+}
+
+function selectSOP(sop,card){
+  document.querySelectorAll('.sop-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  const pane=document.getElementById('sopDetailPane');
+  const upSOPs=QMS.relationships.filter(r=>r.target===sop.id).map(r=>sopById(r.source));
+  const dnSOPs=QMS.relationships.filter(r=>r.source===sop.id).map(r=>sopById(r.target));
+  pane.innerHTML=`
+    <div class="sdp-number">SOP ${sop.num}</div>
+    <div class="sdp-title">${sop.title}</div>
+    <div class="sdp-grid">
+      <div><strong>ISO Clause:</strong> §${sop.clause}</div>
+      <div><strong>Owner:</strong> ${sop.owner}</div>
+      <div><strong>⏱ Trigger / Frequency:</strong> ${sop.freq}</div>
+      <div><strong>Documented Processes:</strong> ${sop.processes}</div>
+      <div><strong>Forms &amp; Records:</strong> ${sop.forms}</div>
+    </div>
+    <div class="rel-box">
+      <div class="rel-title">Upstream Dependencies</div>
+      <div class="rel-items">${upSOPs.length?upSOPs.map(s=>`<span class="rel-item">${s.num}</span>`).join(''):'<span style="font-size:.82rem;color:var(--slate)">None</span>'}</div>
+    </div>
+    <div class="rel-box">
+      <div class="rel-title">Downstream Outputs</div>
+      <div class="rel-items">${dnSOPs.length?dnSOPs.map(s=>`<span class="rel-item">${s.num}</span>`).join(''):'<span style="font-size:.82rem;color:var(--slate)">None</span>'}</div>
+    </div>
+    <div class="network-box">
+      <div class="network-title">SOP Relationships Network</div>
+      <div id="networkViz" style="width:100%;height:280px;"></div>
+    </div>`;
+  requestAnimationFrame(()=>{
+    const el=document.getElementById('networkViz');
+    if(el&&el.clientWidth>0)drawNetwork(el,sop.id);
+  });
+}
+
+function drawNetwork(container,activeSopId){
+  const w=container.clientWidth,h=280;
+  d3.select(container).selectAll('svg').remove();
+  const svg=d3.select(container).append('svg').attr('width',w).attr('height',h);
+  const nodes=QMS.sops.map(s=>({id:s.id,sec:s.sec,num:s.num}));
+  const links=QMS.relationships.map(r=>({...r}));
+  const sim=d3.forceSimulation(nodes)
+    .force('link',d3.forceLink(links).id(d=>d.id).distance(70))
+    .force('charge',d3.forceManyBody().strength(-180))
+    .force('center',d3.forceCenter(w/2,h/2))
+    .force('collide',d3.forceCollide(22));
+  const link=svg.append('g').selectAll('line').data(links).join('line')
+    .attr('stroke','#CBD5E1').attr('stroke-width',1.5).attr('stroke-opacity',.6);
+  const node=svg.append('g').selectAll('g').data(nodes).join('g').attr('cursor','pointer')
+    .call(d3.drag()
+      .on('start',(e,d)=>{if(!e.active)sim.alphaTarget(.3).restart();d.fx=d.x;d.fy=d.y;})
+      .on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y;})
+      .on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;}));
+  node.append('circle').attr('r',16)
+    .attr('fill',d=>activeSopId===d.id?'#B8860B':secColor(d.sec))
+    .attr('stroke','#fff').attr('stroke-width',2);
+  node.append('text').attr('text-anchor','middle').attr('dy','.35em')
+    .style('font-size','8px').style('fill','#fff').style('font-weight','bold')
+    .text(d=>d.num.replace('QP-','').replace('LP-','L').replace('EP-','E').replace('QM','QM'));
+  node.append('title').text(d=>d.num);
+  sim.on('tick',()=>{
+    link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+    node.attr('transform',d=>`translate(${d.x},${d.y})`);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// QA MANAGER — CLAUSE MATRIX
+// ═══════════════════════════════════════════════
+function renderQAMgr(){
+  const thead=document.getElementById('matrixHead'),tbody=document.getElementById('matrixBody');
+  thead.innerHTML='';tbody.innerHTML='';
+  const clauses=QMS.clauses;
+  const hrow=document.createElement('tr');
+  const hcorner=document.createElement('th');
+  hcorner.textContent='SOP';hcorner.style.cssText='writing-mode:horizontal-tb;transform:none;height:auto;min-width:90px;';
+  hrow.appendChild(hcorner);
+  clauses.forEach(c=>{
+    const th=document.createElement('th');
+    th.textContent=c.id;th.title=c.title;
+    th.setAttribute('data-clause',c.id);
+    hrow.appendChild(th);
+  });
+  thead.appendChild(hrow);
+
+  // rows: QM + all SOPs
+  const rows=[{id:'QM',num:'QM'},...QMS.sops];
+  rows.forEach(sop=>{
+    const tr=document.createElement('tr');
+    const hd=document.createElement('td');
+    hd.className='row-hdr';hd.textContent=sop.num||sop.id;
+    hd.addEventListener('click',()=>{
+      document.querySelectorAll('.mc.highlighted').forEach(el=>el.classList.remove('highlighted'));
+      document.querySelectorAll(`[data-sop="${sop.id}"]`).forEach(el=>el.classList.add('highlighted'));
+    });
+    tr.appendChild(hd);
+    clauses.forEach(c=>{
+      const td=document.createElement('td');td.className='mc';
+      if(c.sops.includes(sop.id)){
+        td.classList.add('covered');
+        td.setAttribute('data-sop',sop.id);td.setAttribute('data-clause',c.id);
+        td.addEventListener('click',()=>openDetailPanel(sop,c));
+        td.title=`${sop.num||sop.id} covers §${c.id}`;
+      } else {td.classList.add('empty');}
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  // count row
+  const countRow=document.createElement('tr');
+  const countHdr=document.createElement('td');
+  countHdr.className='row-hdr';countHdr.textContent='# SOPs';
+  countRow.appendChild(countHdr);
+  clauses.forEach(c=>{
+    const td=document.createElement('td');td.textContent=c.sops.length;
+    td.style.cssText='font-weight:700;background:#e8f0fb;font-size:.8rem;';
+    countRow.appendChild(td);
+  });
+  tbody.appendChild(countRow);
+
+  // search
+  document.getElementById('matrixSearch').addEventListener('input',e=>{
+    const q=e.target.value.toLowerCase();
+    document.querySelectorAll('#matrixBody tr').forEach(row=>{
+      if(row===countRow)return;
+      const hdrText=row.querySelector('.row-hdr')?.textContent.toLowerCase()||'';
+      let showRow=!q||hdrText.includes(q);
+      if(!showRow){
+        row.querySelectorAll('.mc.covered').forEach(cell=>{
+          const ci=cell.getAttribute('data-clause');
+          const clause=QMS.clauses.find(x=>x.id===ci);
+          if(clause&&(clause.id.includes(q)||clause.title.toLowerCase().includes(q)))showRow=true;
+        });
+      }
+      row.style.display=showRow?'':'none';
+    });
+  });
+}
+
+function openDetailPanel(sop,clause){
+  const panel=document.getElementById('detailPanel'),cont=document.getElementById('detailContent');
+  const sopObj=sopById(sop.id);
+  cont.innerHTML=`
+    <div class="dp-number">${sopObj.num}</div>
+    <div class="dp-title">${sopObj.title}</div>
+    <div class="dp-section">
+      <div class="dp-section-title">ISO Clause</div>
+      <span class="dp-badge">§${clause.id} — ${clause.title}</span>
+    </div>
+    <div class="dp-section">
+      <div class="dp-section-title">Trigger / Frequency</div>
+      <span class="dp-badge">⏱ ${sopObj.freq}</span>
+    </div>
+    <div class="dp-section">
+      <div class="dp-section-title">Processes / Forms</div>
+      <span class="dp-badge">⚙️ ${sopObj.processes} processes</span>
+      <span class="dp-badge">📄 ${sopObj.forms} forms</span>
+    </div>
+    <div class="dp-section">
+      <div class="dp-section-title">Documented Evidence</div>
+      ${clause.forms.map(f=>`<span class="dp-badge form">${f}</span>`).join('')}
+    </div>
+    <div class="dp-section" style="background:var(--navy-light);padding:.85rem;border-radius:6px;font-size:.86rem;">
+      <strong>How it implements §${clause.id}:</strong><br>${sopObj.num} establishes documented procedures and quality records that ensure ${clause.title.toLowerCase()} throughout all relevant laboratory activities.
+    </div>`;
+  panel.classList.add('open');
+}
+document.getElementById('panelClose').addEventListener('click',()=>document.getElementById('detailPanel').classList.remove('open'));
+
+// ═══════════════════════════════════════════════
+// ANALYST VIEW
+// ═══════════════════════════════════════════════
+function renderAnalyst(){
+  const grid=document.getElementById('activityGrid');grid.innerHTML='';
+  QMS.analystActivities.forEach(act=>{
+    const div=document.createElement('div');div.className='act-card';
+    div.innerHTML=`
+      <div class="act-icon">${act.icon}</div>
+      <div class="act-title">${act.activity}</div>
+      <div class="act-sops">${act.sops.map(s=>`<span class="act-pill">${s}</span>`).join('')}</div>`;
+    div.addEventListener('click',()=>expandActivity(act));
+    grid.appendChild(div);
+  });
+
+  const searchEl=document.getElementById('activitySearch');
+  const acEl=document.getElementById('autocomplete');
+  searchEl.addEventListener('input',e=>{
+    const q=e.target.value.toLowerCase();acEl.innerHTML='';
+    if(q.length>0){
+      const matches=QMS.analystActivities.filter(a=>a.activity.toLowerCase().includes(q)||a.sops.join(' ').toLowerCase().includes(q));
+      if(matches.length){
+        acEl.classList.add('active');
+        matches.forEach(m=>{
+          const item=document.createElement('div');item.className='ac-item';
+          item.innerHTML=`<div class="ac-item-title">${m.icon} ${m.activity}</div><div class="ac-item-sops">${m.sops.join(' → ')}</div>`;
+          item.addEventListener('click',()=>{expandActivity(m);acEl.classList.remove('active');searchEl.value='';});
+          acEl.appendChild(item);
+        });
+      } else acEl.classList.remove('active');
+    } else acEl.classList.remove('active');
+  });
+  document.addEventListener('click',e=>{if(!searchEl.contains(e.target)&&!acEl.contains(e.target))acEl.classList.remove('active');});
+}
+
+function expandActivity(act){
+  const area=document.getElementById('expandedActArea');
+  const div=document.createElement('div');div.className='expanded-act show';
+  div.innerHTML=`
+    <div class="ea-title">${act.icon} ${act.activity}</div>
+    <p style="margin-bottom:1.25rem;color:var(--slate);font-size:.9rem;">${act.desc}</p>
+    ${act.sops.map((id,i)=>{
+      const s=sopById(id);
+      return `<div style="margin-bottom:1rem;">
+        <div class="ea-step">Step ${i+1}: ${s.num} — ${s.title}</div>
+        <div class="ea-instr">⏱ <strong>When:</strong> ${s.freq}</div>
+        <div class="ea-instr">⚙️ <strong>Action:</strong> Follow ${s.num} procedures as documented. Record results on designated forms.</div>
+        <div class="ea-form">📄 ${s.forms} form(s) required · Owner: ${s.owner}</div>
+      </div>`;
+    }).join('')}`;
+  area.innerHTML='';area.appendChild(div);
+  window.scrollTo({top:area.offsetTop-20,behavior:'smooth'});
+}
+
+// ═══════════════════════════════════════════════
+// AUDITOR VIEW
+// ═══════════════════════════════════════════════
+function renderAuditor(){
+  const tree=document.getElementById('clauseTree');tree.innerHTML='';
+  QMS.sections.forEach(sec=>{
+    const secDiv=document.createElement('div');secDiv.className='tree-sec';
+    const hdr=document.createElement('div');hdr.className='tree-sec-hdr';
+    hdr.style.borderLeft=`3px solid ${sec.color}`;hdr.style.paddingLeft='.65rem';
+    hdr.textContent=`§${sec.id} ${sec.name}`;
+    secDiv.appendChild(hdr);
+    QMS.clauses.filter(c=>c.s===sec.id).forEach(c=>{
+      const div=document.createElement('div');div.className='tree-clause';
+      div.textContent=`${c.id} ${c.title}`;
+      div.addEventListener('click',()=>selectClause(c,div));
+      secDiv.appendChild(div);
+    });
+    tree.appendChild(secDiv);
+  });
+
+  // coverage list
+  const covList=document.getElementById('covList');covList.innerHTML='';
+  QMS.clauses.forEach(c=>{
+    const isPartial=c.id==='7.3';
+    const div=document.createElement('div');div.className='cov-item';
+    div.innerHTML=`
+      <div class="cov-check" style="${isPartial?'background:#FF9800;':''}">✓</div>
+      <div>${c.id} ${c.title}${isPartial?' <em style="color:#C2410C;font-size:.77rem;">(partial)</em>':''}</div>`;
+    covList.appendChild(div);
+  });
+
+  document.getElementById('checklistBtn').addEventListener('click',generateChecklist);
+}
+
+function selectClause(clause,el){
+  document.querySelectorAll('.tree-clause.selected').forEach(x=>x.classList.remove('selected'));
+  el.classList.add('selected');
+  const panel=document.getElementById('evidencePanel');
+  const isPartial=clause.id==='7.3';
+  panel.innerHTML=`
+    <div class="ev-num">${clause.id}</div>
+    <div class="ev-title">${clause.title}</div>
+    <div class="ev-desc">${QMS.clauseDescriptions[clause.id]||'This clause addresses key ISO 17025:2017 requirements.'}</div>
+    ${isPartial?`<div style="background:#FEF3C7;border:1px solid #F59E0B;padding:.85rem;border-radius:6px;margin-bottom:1rem;font-size:.85rem;">⚠ <strong>Minor Gap:</strong> Partially implemented. SOP-07 (dedicated Sampling SOP) due April 30, 2026.</div>`:''}
+    <div class="ev-section">
+      <div class="ev-sec-title">Laboratory Implementation</div>
+      ${clause.sops.map(id=>{const s=sopById(id);return`<div class="ev-item"><div class="ev-item-code">${s.num}</div><div class="ev-item-desc">${s.title}</div></div>`;}).join('')}
+    </div>
+    <div class="ev-section">
+      <div class="ev-sec-title">Documented Evidence</div>
+      ${clause.forms.map(f=>`<div class="ev-item"><div class="ev-item-code">${f}</div><div class="ev-item-desc">Quality record demonstrating conformity to §${clause.id}</div></div>`).join('')}
+    </div>
+    <div class="audit-note">✓ All evidence maintained per QP-14. Records available upon request during accreditation assessment.</div>`;
+}
+
+function generateChecklist(){
+  const body=document.getElementById('checklistBody');body.innerHTML='';
+  QMS.clauses.forEach(c=>{
+    const div=document.createElement('div');div.className='cl-item';
+    div.innerHTML=`
+      <div class="cl-checkbox"></div>
+      <div><div class="cl-id">ISO 17025:2017 §${c.id}</div><div class="cl-title">${c.title}${c.id==='7.3'?' ⚠ Partial':''}</div></div>`;
+    body.appendChild(div);
+  });
+  document.getElementById('checklistModal').classList.add('active');
+}
+document.getElementById('modalClose').addEventListener('click',()=>document.getElementById('checklistModal').classList.remove('active'));
+
+// ═══════════════════════════════════════════════
+// PERSONA SWITCHING
+// ═══════════════════════════════════════════════
+const personaRenderMap={
+  topMgmt:renderTopMgmt,labMgmt:renderLabMgmt,
+  qaMgr:renderQAMgr,analyst:renderAnalyst,
+  customer:null,auditor:renderAuditor
+};
+
+document.querySelectorAll('.persona-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const persona=btn.dataset.persona;
+    document.querySelectorAll('.persona-btn').forEach(b=>b.classList.toggle('active',b===btn));
+    document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===persona));
+    if(personaRenderMap[persona])personaRenderMap[persona]();
+  });
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  const map={'1':'topMgmt','2':'labMgmt','3':'qaMgr','4':'analyst','5':'customer','6':'auditor'};
+  if(map[e.key]){
+    const btn=document.querySelector(`[data-persona="${map[e.key]}"]`);
+    if(btn)btn.click();
+  }
+});
+
+// Init
+document.addEventListener('DOMContentLoaded',()=>renderTopMgmt());
+</script>
+</body>
+</html>

@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vertex Analytical Labs — QMS Dashboard v04</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <style>
+    :root {
+      --navy:#003d7a; --navy-mid:#1a5fa0; --navy-light:#e8f0fb;
+      --gold:#B8860B; --gold-light:#FDF3DC;
+      --teal:#0D9488; --teal-light:#CCFBF1;
+      --green:#15803D; --green-light:#DCFCE7;
+      --orange:#C2410C; --orange-light:#FEF3C7;
+      --purple:#7C3AED; --purple-light:#EDE9FE;
+      --slate:#475569; --bg:#F1F5F9; --white:#FFFFFF; --border:#E2E8F0;
+      --red:#DC2626; --red-light:#FEE2E2;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;color:var(--slate);}
+
+    .app-header{background:linear-gradient(135deg,var(--navy),#1a3a5c);color:#fff;padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;}
+    .app-header h1{font-size:1.5rem;font-weight:700;}
+    .app-header p{font-size:.85rem;opacity:.85;}
+    .header-badge{background:linear-gradient(135deg,var(--gold),#d4af37);color:#fff;padding:.4rem 1.1rem;border-radius:2rem;font-size:.8rem;font-weight:600;box-shadow:0 2px 8px rgba(184,134,11,.3);}
+    .status-dot{width:10px;height:10px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+    .status-dot.amber{background:#EAB308;animation:pulse 2s infinite;}
+    .status-dot.red{background:var(--red);animation:pulse 2s infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+    .persona-bar{background:#fff;padding:.85rem 2rem;border-bottom:1px solid var(--border);display:flex;gap:.6rem;flex-wrap:wrap;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+    .persona-btn{padding:.55rem 1.1rem;border:2px solid var(--navy);background:#fff;color:var(--navy);border-radius:2rem;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .25s;display:flex;align-items:center;gap:.4rem;}
+    .persona-btn:hover{background:var(--navy-light);}
+    .persona-btn.active{background:var(--navy);color:#fff;box-shadow:0 4px 12px rgba(0,61,122,.25);}
+    .help-btn{background:none;border:1px solid var(--navy);padding:.55rem .75rem;border-radius:50%;width:34px;height:34px;cursor:pointer;color:var(--navy);font-weight:600;display:flex;align-items:center;justify-content:center;}
+
+    .main{padding:2rem;max-width:1600px;margin:0 auto;}
+    .view{display:none;animation:fadeUp .3s ease-out;}
+    .view.active{display:block;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    .role-desc{background:var(--navy-light);border-left:4px solid var(--navy);padding:1rem 1.25rem;border-radius:0 6px 6px 0;margin-bottom:1.5rem;font-size:.9rem;color:var(--navy);}
+
+    .sec-title{font-size:1.1rem;font-weight:700;color:var(--navy);margin:2rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid var(--navy);}
+
+    .metrics-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.75rem;}
+    .metric{background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;padding:1.25rem;border-radius:10px;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.12);}
+    .metric .num{font-size:2.2rem;font-weight:700;line-height:1;}
+    .metric .lbl{font-size:.78rem;opacity:.85;margin-top:.4rem;}
+
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem;}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-bottom:2rem;}
+    .grid-auto{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;margin-bottom:1.75rem;}
+
+    .card{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:box-shadow .25s;}
+    .card:hover{box-shadow:0 4px 16px rgba(0,0,0,.12);}
+    .card-title{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem;}
+
+    .badge-card{border:2px solid var(--border);border-radius:8px;padding:1.25rem;transition:all .25s;}
+    .badge-card:hover{box-shadow:0 6px 16px rgba(0,0,0,.1);transform:translateY(-3px);}
+    .badge-card.full{background:var(--green-light);border-color:var(--green);}
+    .badge-card.partial{background:var(--orange-light);border-color:var(--orange);}
+    .badge-card.gap{background:var(--red-light);border-color:var(--red);}
+    .badge-card h4{color:var(--navy);margin:.5rem 0;}
+    .badge-card p{font-size:.87rem;line-height:1.5;}
+    .badge-card .sop-ref{background:#f5f5f5;padding:.5rem .75rem;border-left:3px solid var(--navy);margin-top:.75rem;font-size:.82rem;}
+    .cbadge{display:inline-block;padding:.3rem .7rem;border-radius:1rem;font-weight:700;font-size:.78rem;color:#fff;margin-left:.6rem;}
+    .cbadge.full{background:var(--green);}
+    .cbadge.partial{background:var(--orange);}
+    .cbadge.gap{background:var(--red);}
+    .clause-num{font-weight:700;color:var(--navy);font-size:1.1rem;}
+
+    .counter-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
+    .counter-item{text-align:center;}
+    .counter-icon{width:52px;height:52px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto .6rem;}
+    .counter-number{font-size:2.4rem;font-weight:700;color:var(--navy);line-height:1;}
+    .counter-label{font-size:.8rem;color:var(--slate);margin-top:.35rem;}
+
+    .compliance-stmt{border-left:4px solid var(--gold);padding-left:1.25rem;line-height:1.75;font-size:.93rem;color:var(--slate);}
+    .compliance-stmt::before{content:"✓";display:flex;width:38px;height:38px;background:var(--gold);color:#fff;border-radius:50%;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;margin-bottom:.85rem;}
+
+    .radar-wrap{display:flex;justify-content:center;align-items:center;height:300px;}
+
+    .timeline-wrap{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+    .timeline{position:relative;padding:2rem 0;}
+    .timeline::before{content:"";position:absolute;top:50%;left:0;right:0;height:2px;background:var(--navy);transform:translateY(-50%);}
+    .timeline-items{display:flex;justify-content:space-between;position:relative;z-index:1;}
+    .timeline-item{text-align:center;flex:1;}
+    .timeline-dot{width:18px;height:18px;border:3px solid #fff;border-radius:50%;margin:0 auto .6rem;box-shadow:0 0 0 2px var(--navy);}
+    .timeline-dot.completed{background:var(--gold);}
+    .timeline-dot.in-progress{background:var(--navy);}
+    .timeline-dot.planned{background:#ccc;}
+    .timeline-label{font-size:.78rem;font-weight:600;color:var(--navy);margin-bottom:.2rem;}
+    .timeline-year{font-size:.72rem;color:var(--slate);}
+
+    .hl-box{background:#e3f2fd;border:2px solid #2196F3;padding:1rem 1.25rem;border-radius:8px;margin:1rem 0;}
+    .hl-box h4{color:#1565C0;margin-bottom:.6rem;}
+    .hl-box ul{list-style:none;padding:0;}
+    .hl-box li{padding:.35rem 0 .35rem 1.25rem;position:relative;font-size:.88rem;}
+    .hl-box li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700;}
+
+    .action-box{background:var(--orange-light);border-left:4px solid var(--orange);padding:1rem 1.25rem;border-radius:0 6px 6px 0;margin:1rem 0;font-size:.88rem;}
+    .action-box strong{color:var(--orange);}
+    .action-box.error{background:var(--red-light);border-left-color:var(--red);}
+    .action-box.error strong{color:var(--red);}
+
+    .search-bar{margin-bottom:1rem;display:flex;}
+    .search-bar input{flex:1;padding:.65rem 1rem;border:1px solid var(--border);border-radius:6px;font-size:.9rem;transition:border-color .25s;}
+    .search-bar input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(0,61,122,.1);}
+
+    .matrix-wrap{overflow-x:auto;background:#fff;border-radius:10px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:1.5rem;}
+    .comp-matrix{width:100%;border-collapse:collapse;font-size:.8rem;}
+    .comp-matrix thead{position:sticky;top:0;background:var(--navy-light);z-index:10;}
+    .comp-matrix th{padding:.6rem .4rem;text-align:center;color:var(--navy);font-weight:600;border:1px solid var(--border);writing-mode:vertical-rl;transform:rotate(180deg);height:180px;vertical-align:bottom;}
+    .comp-matrix td{padding:.75rem .4rem;text-align:center;border:1px solid var(--border);height:44px;vertical-align:middle;}
+    .comp-matrix tr:nth-child(even){background:var(--bg);}
+    .row-hdr{font-weight:600;color:var(--navy);text-align:left!important;position:sticky;left:0;background:var(--navy-light);z-index:9;min-width:90px;padding:.75rem .75rem!important;cursor:pointer;}
+    .mc{cursor:pointer;transition:all .2s;position:relative;}
+    .mc.covered{background:var(--navy);color:#fff;font-weight:600;}
+    .mc.covered::after{content:"✓";font-size:1.1rem;}
+    .mc.covered:hover{transform:scale(1.1);box-shadow:0 0 0 3px rgba(0,61,122,.3);}
+    .mc.empty{background:#f8fafc;}
+    .mc.highlighted{background:var(--gold);color:#fff;font-weight:600;}
+
+    .detail-panel{position:fixed;right:0;top:0;width:380px;height:100vh;background:#fff;box-shadow:-4px 0 12px rgba(0,0,0,.15);z-index:1000;transform:translateX(100%);transition:transform .3s;overflow-y:auto;padding:1.75rem;}
+    .detail-panel.open{transform:translateX(0);}
+    .panel-close{position:absolute;top:1.25rem;right:1.25rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--slate);}
+    .dp-number{font-size:1.4rem;font-weight:700;color:var(--gold);margin-bottom:.25rem;}
+    .dp-title{font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:1rem;}
+    .dp-section{margin-bottom:1.25rem;}
+    .dp-section-title{font-size:.8rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;}
+    .dp-badge{display:inline-block;padding:.3rem .65rem;background:var(--navy-light);color:var(--navy);border-radius:4px;font-size:.77rem;font-weight:600;margin:.2rem;}
+    .dp-badge.form{background:var(--teal-light);color:var(--teal);}
+    .dp-badge.status{background:var(--green-light);color:var(--green);}
+    .dp-badge.status.amber{background:var(--orange-light);color:var(--orange);}
+    .dp-badge.status.red{background:var(--red-light);color:var(--red);}
+
+    .two-panel{display:grid;grid-template-columns:360px 1fr;gap:1.5rem;min-height:600px;}
+    .sop-list{background:#fff;border-radius:10px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,.08);max-height:700px;overflow-y:auto;}
+    .sop-card{padding:.85rem;border:1px solid var(--border);border-radius:7px;margin-bottom:.75rem;cursor:pointer;transition:all .2s;}
+    .sop-card:hover{border-color:var(--navy);box-shadow:0 2px 8px rgba(0,61,122,.1);transform:translateX(3px);}
+    .sop-card.selected{background:var(--navy-light);border-color:var(--navy);}
+    .sop-chip{display:inline-block;padding:.3rem .65rem;border-radius:4px;font-size:.75rem;font-weight:700;color:#fff;margin-bottom:.4rem;background:var(--navy);}
+    .sop-title{font-weight:600;color:var(--navy);margin-bottom:.4rem;font-size:.9rem;}
+    .sop-meta{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.5rem;font-size:.77rem;}
+    .sop-meta span{background:var(--bg);padding:.2rem .45rem;border-radius:3px;color:var(--slate);}
+    .sop-badge{display:inline-block;padding:.2rem .4rem;border-radius:3px;font-size:.7rem;font-weight:600;color:#fff;margin-left:.3rem;}
+    .sop-badge.rev{background:#9333ea;}
+    .sop-badge.status{background:var(--green);}
+    .sop-badge.status.amber{background:var(--orange);}
+    .sop-badge.status.draft{background:#999;}
+    .sop-stats{display:flex;gap:.9rem;font-size:.78rem;color:var(--slate);padding-top:.5rem;border-top:1px solid var(--border);}
+    .sop-detail-pane{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+    .sdp-number{font-size:.82rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:1px;}
+    .sdp-title{font-size:1.5rem;font-weight:700;color:var(--navy);margin:.35rem 0 1rem;}
+    .sdp-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:1.25rem;font-size:.88rem;}
+    .rel-box{background:var(--bg);border-radius:7px;padding:1.1rem;margin:1rem 0;}
+    .rel-title{font-size:.82rem;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;}
+    .rel-items{display:flex;flex-wrap:wrap;gap:.4rem;}
+    .rel-item{background:#fff;border:1px solid var(--border);padding:.3rem .6rem;border-radius:4px;font-size:.79rem;color:var(--navy);font-weight:500;}
+    .steps-section{margin:1.5rem 0;padding:1rem;background:var(--bg);border-radius:6px;border-left:3px solid var(--navy);}
+    .steps-section-title{font-weight:700;color:var(--navy);font-size:.85rem;text-transform:uppercase;margin-bottom:.75rem;}
+    .step-item{background:#fff;padding:.65rem;border-radius:4px;margin-bottom:.5rem;border-left:3px solid var(--navy);}
+    .step-num{font-weight:700;color:var(--gold);font-size:.85rem;margin-bottom:.2rem;}
+    .step-desc{font-size:.8rem;color:var(--slate);line-height:1.4;}
+    .step-form{font-size:.75rem;color:var(--teal);font-weight:600;margin-top:.3rem;}
+    .network-box{background:#fff;border-radius:10px;padding:1.25rem;margin-top:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+    .network-title{font-size:.85rem;font-weight:600;color:var(--navy);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.5px;}
+
+    .search-prompt{text-align:center;margin-bottom:2rem;}
+    .search-prompt-title{font-size:1.5rem;font-weight:700;color:var(--navy);margin-bottom:.85rem;}
+    .search-wrap{position:relative;display:inline-block;width:100%;max-width:560px;}
+    .search-lg{width:100%;padding:.9rem 1rem;font-size:.95rem;border:2px solid var(--border);border-radius:8px;transition:border-color .25s;}
+    .search-lg:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(0,61,122,.1);}
+    .autocomplete{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:280px;overflow-y:auto;z-index:100;display:none;}
+    .autocomplete.active{display:block;}
+    .ac-item{padding:.85rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s;}
+    .ac-item:last-child{border-bottom:none;}
+    .ac-item:hover{background:var(--navy-light);}
+    .ac-item-title{font-weight:600;color:var(--navy);margin-bottom:.2rem;font-size:.9rem;}
+    .ac-item-sops{font-size:.78rem;color:var(--slate);}
+    .activity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.25rem;}
+    .act-card{background:#fff;border-radius:10px;padding:1.25rem;text-align:center;cursor:pointer;transition:all .25s;box-shadow:0 2px 8px rgba(0,0,0,.08);border:2px solid transparent;}
+    .act-card:hover{transform:translateY(-3px);box-shadow:0 6px 14px rgba(0,0,0,.12);border-color:var(--navy);}
+    .act-card.expanded{background:var(--navy-light);border-color:var(--navy);}
+    .act-icon{font-size:2.2rem;margin-bottom:.75rem;}
+    .act-title{font-weight:600;color:var(--navy);margin-bottom:.6rem;font-size:.88rem;line-height:1.4;}
+    .act-sops{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:center;margin-top:.6rem;}
+    .act-pill{background:var(--navy);color:#fff;padding:.25rem .5rem;border-radius:3px;font-size:.72rem;font-weight:600;}
+    .expanded-act{background:#fff;border-radius:10px;padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.08);display:none;}
+    .expanded-act.show{display:block;animation:slideDown .3s ease;}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    .ea-title{font-size:1.15rem;font-weight:700;color:var(--navy);border-bottom:2px solid var(--navy);padding-bottom:.75rem;margin-bottom:1rem;}
+    .ea-step{background:var(--navy);color:#fff;padding:.65rem 1rem;border-radius:6px;font-weight:600;margin-bottom:.5rem;font-size:.9rem;}
+    .ea-instr{background:var(--bg);padding:.85rem;border-radius:6px;margin-bottom:.35rem;font-size:.87rem;color:var(--slate);}
+    .ea-form{font-size:.78rem;color:var(--teal);font-weight:600;font-style:italic;}
+    .ea-person{font-size:.75rem;color:var(--slate);margin-top:.25rem;font-style:italic;}
+
+    .three-panel{display:grid;grid-template-columns:260px 1fr 260px;gap:1.5rem;min-height:600px;}
+    .clause-tree{background:#fff;border-radius:10px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,.08);max-height:700px;overflow-y:auto;}
+    .tree-sec{margin-bottom:1.25rem;}
+    .tree-sec-hdr{font-weight:700;color:var(--navy);font-size:.85rem;padding:.5rem;border-radius:4px;cursor:pointer;}
+    .tree-sec-hdr:hover{background:var(--navy-light);}
+    .tree-clause{padding:.45rem 0 .45rem 1rem;border-left:2px solid var(--border);cursor:pointer;font-size:.82rem;color:var(--slate);transition:all .2s;}
+    .tree-clause:hover{color:var(--navy);border-left-color:var(--navy);}
+    .tree-clause.selected{background:var(--navy-light);color:var(--navy);font-weight:600;}
+    .evidence-panel{background:#fff;border-radius:10px;padding:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,.08);max-height:700px;overflow-y:auto;}
+    .ev-num{font-size:1.4rem;font-weight:700;color:var(--gold);margin-bottom:.25rem;}
+    .ev-title{font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:.75rem;}
+    .ev-desc{background:var(--navy-light);padding:.85rem;border-radius:6px;margin-bottom:1.25rem;font-size:.88rem;border-left:3px solid var(--navy);}
+    .ev-section{margin-bottom:1.25rem;}
+    .ev-sec-title{font-weight:700;font-size:.82rem;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;}
+    .ev-item{background:var(--bg);padding:.65rem;border-radius:4px;margin-bottom:.4rem;border-left:3px solid var(--navy);font-size:.83rem;}
+    .ev-item-code{font-weight:600;color:var(--navy);}
+    .ev-item-code.link{color:var(--teal);cursor:pointer;text-decoration:underline;}
+    .ev-item-desc{color:var(--slate);margin-top:.15rem;font-size:.79rem;}
+    .audit-note{background:var(--green-light);border:1px solid var(--green);padding:.85rem;border-radius:6px;margin-top:.85rem;font-size:.83rem;color:var(--green);}
+    .coverage-panel{background:#fff;border-radius:10px;padding:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,.08);max-height:700px;overflow-y:auto;}
+    .cov-hdr{font-weight:700;color:var(--navy);margin-bottom:.75rem;padding-bottom:.6rem;border-bottom:2px solid var(--border);}
+    .cov-count{font-size:1.5rem;font-weight:700;color:var(--gold);margin-bottom:1.25rem;}
+    .cov-item{padding:.45rem .65rem;border-bottom:1px solid var(--border);font-size:.82rem;display:flex;align-items:center;gap:.6rem;}
+    .cov-check{width:16px;height:16px;background:var(--green);color:#fff;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;}
+    .checklist-btn{width:100%;padding:.65rem;background:var(--navy);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;margin-top:.85rem;transition:background .25s;}
+    .checklist-btn:hover{background:var(--navy-mid);}
+
+    .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center;}
+    .modal.active{display:flex;}
+    .modal-inner{background:#fff;border-radius:10px;padding:1.75rem;max-width:580px;width:90%;max-height:80vh;overflow-y:auto;position:relative;}
+    .modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.4rem;cursor:pointer;}
+    .modal-title{font-size:1.3rem;font-weight:700;color:var(--navy);margin-bottom:1.25rem;}
+    .modal-buttons{display:flex;gap:.75rem;margin-top:1.25rem;}
+    .modal-btn{flex:1;padding:.65rem;border:none;border-radius:6px;cursor:pointer;font-weight:600;transition:background .25s;}
+    .modal-btn.primary{background:var(--navy);color:#fff;}
+    .modal-btn.primary:hover{background:var(--navy-mid);}
+    .cl-item{display:flex;align-items:flex-start;gap:.65rem;margin-bottom:.75rem;padding:.65rem;background:var(--bg);border-radius:5px;}
+    .cl-checkbox{width:18px;height:18px;border:2px solid var(--navy);border-radius:3px;flex-shrink:0;margin-top:.15rem;cursor:pointer;}
+    .cl-id{font-weight:700;color:var(--navy);font-size:.85rem;}
+    .cl-title{color:var(--slate);font-size:.82rem;margin-top:.15rem;}
+
+    .help-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:3000;align-items:center;justify-content:center;}
+    .help-overlay.active{display:flex;}
+    .help-content{background:#fff;border-radius:10px;padding:2rem;max-width:420px;box-shadow:0 4px 20px rgba(0,0,0,.2);}
+    .help-content h3{color:var(--navy);margin-bottom:1rem;}
+    .help-content .help-section{margin-bottom:1rem;}
+    .help-content .help-key{background:var(--navy);color:#fff;padding:.2rem .4rem;border-radius:3px;font-size:.75rem;font-weight:700;margin-right:.25rem;}
+
+    .loading{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .app-footer{background:#f5f5f5;padding:1.25rem 2rem;text-align:center;color:#888;font-size:.82rem;border-top:1px solid var(--border);margin-top:2rem;}
+
+    @media(max-width:1200px){.three-panel{grid-template-columns:220px 1fr}}
+    @media(max-width:1024px){.grid-2,.two-panel,.three-panel{grid-template-columns:1fr};.persona-bar{padding:.6rem 1rem;gap:.4rem}}
+    @media(max-width:768px){.metrics-row{grid-template-columns:1fr 1fr}.counter-grid{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <h1>⚗️ Vertex Analytical Labs</h1>
+    <p>Quality Management System Dashboard — ISO/IEC 17025:2017</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:1.5rem;">
+    <div class="header-badge">ISO/IEC 17025:2017 Compliance</div>
+    <div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:#fff;">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">System Active</span>
+    </div>
+  </div>
+</div>
+
+<div class="persona-bar">
+  <button class="persona-btn active" data-persona="topMgmt">👔 Top Management</button>
+  <button class="persona-btn" data-persona="labMgmt">🏭 Lab Manager</button>
+  <button class="persona-btn" data-persona="qaMgr">📊 QA Manager</button>
+  <button class="persona-btn" data-persona="analyst">🧪 Lab Personnel</button>
+  <button class="persona-btn" data-persona="customer">👥 Customer Support</button>
+  <button class="persona-btn" data-persona="auditor">📋 External Auditor</button>
+  <button class="help-btn" id="helpBtn" title="Keyboard shortcuts">?</button>
+</div>
+
+<div class="main">
+
+<!-- TOP MANAGEMENT VIEW -->
+<div id="topMgmt" class="view active">
+  <div class="role-desc"><strong>Top Management:</strong> Strategic overview of QMS compliance, accreditation readiness, risk management, and organizational commitments.</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">📋 QMS At a Glance</div>
+      <div class="counter-grid">
+        <div class="counter-item">
+          <div class="counter-icon">📋</div>
+          <div class="counter-number" id="sopCount">0</div>
+          <div class="counter-label">Standard Operating<br>Procedures</div>
+        </div>
+        <div class="counter-item">
+          <div class="counter-icon">📄</div>
+          <div class="counter-number" id="formCount">0</div>
+          <div class="counter-label">Quality Records<br>&amp; Forms</div>
+        </div>
+        <div class="counter-item">
+          <div class="counter-icon">✓</div>
+          <div class="counter-number" id="clauseCount">0</div>
+          <div class="counter-label">ISO 17025:2017<br>Clauses Addressed</div>
+        </div>
+        <div class="counter-item">
+          <div class="counter-icon">⚙️</div>
+          <div class="counter-number" id="processCount">0</div>
+          <div class="counter-label">Documented<br>Processes</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📡 ISO 17025:2017 Section Coverage</div>
+      <div class="radar-wrap"><canvas id="radarChart" width="300" height="300"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">📊 SOP Distribution by Section</div>
+      <div style="height:260px;"><canvas id="distChart" width="400" height="260"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏆 Compliance Statement</div>
+      <div class="compliance-stmt" id="complianceStmt"></div>
+    </div>
+  </div>
+
+  <div class="sec-title">Strategic Compliance Status</div>
+  <div class="grid-auto" id="complianceCards"></div>
+
+  <div class="timeline-wrap">
+    <div class="card-title" style="margin-bottom:1.5rem;">🗓️ QMS Implementation &amp; Accreditation Timeline</div>
+    <div class="timeline" id="timelineContainer"></div>
+  </div>
+
+  <div id="actionBox"></div>
+</div>
+
+<!-- LAB MANAGER VIEW -->
+<div id="labMgmt" class="view">
+  <div class="role-desc"><strong>Lab Manager:</strong> Operational compliance, resource management, procedure implementation. Click any SOP card to view details, process steps, and relationships.</div>
+
+  <div class="metrics-row">
+    <div class="metric"><div class="num" id="lmSopCount">0</div><div class="lbl">Active SOPs</div></div>
+    <div class="metric"><div class="num" id="lmEqCount">0</div><div class="lbl">Equipment Procedures</div></div>
+    <div class="metric"><div class="num" id="lmLabCount">0</div><div class="lbl">Laboratory Procedures</div></div>
+    <div class="metric"><div class="num" id="lmQaCount">0</div><div class="lbl">Quality Procedures</div></div>
+    <div class="metric"><div class="num" id="lmFormCount">0</div><div class="lbl">Total Forms &amp; Records</div></div>
+    <div class="metric"><div class="num" id="lmProcCount">0</div><div class="lbl">Documented Processes</div></div>
+  </div>
+
+  <div class="search-bar" style="margin-bottom:1rem;">
+    <input type="text" id="sopSearch" placeholder="Search SOP by title, owner, or clause…">
+  </div>
+
+  <div class="two-panel">
+    <div class="sop-list" id="sopListContainer"></div>
+    <div class="sop-detail-pane" id="sopDetailPane">
+      <div style="text-align:center;color:var(--slate);padding:3rem 1rem;">
+        <div style="font-size:3rem;margin-bottom:1rem;">📋</div>
+        <p>Select a procedure from the list to view details, process steps, trigger/frequency, and SOP relationships.</p>
+      </div>
+      <div class="network-box">
+        <div class="network-title">SOP Relationships Network</div>
+        <div id="networkViz" style="width:100%;height:280px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QA MANAGER VIEW -->
+<div id="qaMgr" class="view">
+  <div class="role-desc"><strong>QA Manager:</strong> Clause-by-clause compliance matrix. Click any ✓ cell to see which SOP covers it and which forms provide evidence. Click a row header to highlight all clauses covered by that SOP.</div>
+
+  <div class="metrics-row">
+    <div class="metric"><div class="num" id="qaClauseRatio">0/35</div><div class="lbl">Clauses Addressed</div></div>
+    <div class="metric"><div class="num" id="qaGapCount">0</div><div class="lbl">Minor Gaps</div></div>
+    <div class="metric"><div class="num" id="qaFormCount">0</div><div class="lbl">Forms &amp; Records</div></div>
+    <div class="metric"><div class="num" id="qaDocRate">100%</div><div class="lbl">Documentation Rate</div></div>
+  </div>
+
+  <div class="sec-title">Vertex QMS → ISO 17025:2017 Clause-to-Clause Map</div>
+  <div class="search-bar"><input type="text" id="matrixSearch" placeholder="Search SOP or clause (e.g. QP-07, 7.2, Uncertainty)…"></div>
+  <div class="matrix-wrap">
+    <table class="comp-matrix" id="compMatrix">
+      <thead id="matrixHead"></thead>
+      <tbody id="matrixBody"></tbody>
+    </table>
+  </div>
+
+  <div id="qaGapBox"></div>
+</div>
+
+<!-- ANALYST VIEW -->
+<div id="analyst" class="view">
+  <div class="role-desc"><strong>Lab Personnel:</strong> Task-based guidance for all lab staff. Search for what you're doing today or click an activity card to see the exact SOP steps, forms, and responsible personnel to follow.</div>
+
+  <div class="search-prompt">
+    <div class="search-prompt-title">What are you doing today?</div>
+    <div class="search-wrap">
+      <input type="text" id="activitySearch" class="search-lg" placeholder="Start typing an activity…">
+      <div class="autocomplete" id="autocomplete"></div>
+    </div>
+  </div>
+
+  <div id="expandedActArea"></div>
+  <div class="activity-grid" id="activityGrid"></div>
+</div>
+
+<!-- CUSTOMER SUPPORT VIEW -->
+<div id="customer" class="view">
+  <div class="role-desc"><strong>Customer Support:</strong> Service standards, complaint resolution, confidentiality commitments, and contact information.</div>
+
+  <div class="metrics-row">
+    <div class="metric"><div class="num">24 h</div><div class="lbl">Complaint Acknowledgment</div></div>
+    <div class="metric"><div class="num">100%</div><div class="lbl">Confidentiality Assurance</div></div>
+    <div class="metric"><div class="num">ISO 17025</div><div class="lbl">Accreditation Standard</div></div>
+    <div class="metric"><div class="num" id="custAccredTarget">Q3 2026</div><div class="lbl">Accreditation Target</div></div>
+  </div>
+
+  <div class="sec-title">Service Standards</div>
+  <div class="grid-auto" id="custServiceCards"></div>
+
+  <div class="action-box">
+    <strong>Contact:</strong> <span id="custEmail"></span> · <span id="custPhone"></span> · <span id="custAddr"></span>
+  </div>
+</div>
+
+<!-- AUDITOR VIEW -->
+<div id="auditor" class="view">
+  <div class="role-desc"><strong>External Auditor:</strong> Clause tree (left), evidence detail (center), coverage summary and audit checklist (right). Click any clause to review its implementation status and supporting evidence.</div>
+
+  <div class="three-panel">
+    <div class="clause-tree" id="clauseTree"></div>
+    <div class="evidence-panel" id="evidencePanel">
+      <div style="text-align:center;color:var(--slate);padding:3rem 1rem;">
+        <p>Select a clause from the tree to view evidence</p>
+      </div>
+    </div>
+    <div class="coverage-panel">
+      <div class="cov-hdr">Clause Coverage Summary</div>
+      <div class="cov-count" id="covCount">0</div>
+      <div id="covList"></div>
+      <button class="checklist-btn" id="checklistBtn">📋 Audit Checklist (Print/Export)</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="app-footer">
+  <div>Vertex Analytical Labs QMS Dashboard v04 | Last Updated: <span id="lastUpdated">—</span></div>
+  <div style="margin-top:.5rem;font-size:.75rem;">All data dynamically loaded from SharePoint Lists</div>
+</div>
+
+<!-- HELP OVERLAY -->
+<div class="help-overlay" id="helpOverlay">
+  <div class="help-content">
+    <h3>⌨️ Keyboard Shortcuts</h3>
+    <div class="help-section">
+      <div style="font-size:.85rem;margin-bottom:.75rem;">
+        <span class="help-key">1</span> Top Management<br>
+        <span class="help-key">2</span> Lab Manager<br>
+        <span class="help-key">3</span> QA Manager<br>
+        <span class="help-key">4</span> Lab Personnel<br>
+        <span class="help-key">5</span> Customer Support<br>
+        <span class="help-key">6</span> External Auditor<br>
+        <span class="help-key">?</span> Help (this overlay)
+      </div>
+    </div>
+    <button style="width:100%;padding:.65rem;background:var(--navy);color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;" onclick="document.getElementById('helpOverlay').classList.remove('active')">Close</button>
+  </div>
+</div>
+
+<!-- AUDIT CHECKLIST MODAL -->
+<div class="modal" id="checklistModal">
+  <div class="modal-inner">
+    <button class="modal-close" onclick="closeModal('checklistModal')">×</button>
+    <div class="modal-title">📋 Internal Audit Checklist</div>
+    <p style="font-size:.9rem;color:var(--slate);margin-bottom:1rem;">Review and verify implementation of each clause. Print this document for your audit records.</p>
+    <div id="checklistItems" style="max-height:400px;overflow-y:auto;"></div>
+    <div class="modal-buttons">
+      <button class="modal-btn primary" onclick="printChecklist()">🖨️ Print / Save as PDF</button>
+      <button class="modal-btn primary" onclick="exportChecklistCSV()" style="background:#0D9488;">📊 Export as CSV</button>
+      <button class="modal-btn primary" onclick="closeModal('checklistModal')" style="background:#999;">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════════
+// CONFIGURATION & MOCK DATA (v04 — Dynamic)
+// ════════════════════════════════════════════════════════════════════════════════
+
+const config = {
+  lab: { name: "Vertex Analytical Labs", standard: "ISO/IEC 17025:2017", accreditationTarget: "Q3 2026", phone: "+1 888-316-14", emailQuality: "quality@vertexanalytical.com", emailSupport: "customersupport@vertexanalytical.com", address: "9335 Airway Road Suite 208, San Diego CA 92154" },
+  personnel: { labDirector: {name: "A. Elias", title: "Lab Director"}, qaManager: {name: "J. Maldonado", title: "QA Manager"}, labManager: {name: "I. Gonzalez", title: "Lab Manager"}}
+};
+
+// Mock data following the data model
+const qmsData = {
+  sops: [
+    {id: "QP-01", title: "Quality Management", clause: "4.1", section: "4", owner: "Lab Director", freq: "Annual review", processes: 3, forms: 2, revision: "Rev 02", status: "Approved", effectiveDate: "2024-06-01", nextReviewDate: "2025-06-01"},
+    {id: "QP-06", title: "Service Contracts & Review", clause: "7.1", section: "7", owner: "QA Manager", freq: "Per order", processes: 5, forms: 3, revision: "Rev 01", status: "Approved", effectiveDate: "2024-03-15", nextReviewDate: "2025-03-15"},
+    {id: "QP-07", title: "Sampling Procedures", clause: "7.3", section: "7", owner: "Lab Manager", freq: "Per project", processes: 4, forms: 2, revision: "Rev 01", status: "Under Review", effectiveDate: "2025-04-30", nextReviewDate: "2026-04-30"},
+    {id: "QP-08", title: "Sample Handling & Analysis", clause: "7.4", section: "7", owner: "Lab Manager", freq: "Continuous", processes: 8, forms: 5, revision: "Rev 03", status: "Approved", effectiveDate: "2024-01-01", nextReviewDate: "2025-01-01"},
+    {id: "QP-10", title: "Non-Conforming Work", clause: "7.9", section: "7", owner: "QA Manager", freq: "Event-triggered", processes: 3, forms: 2, revision: "Rev 01", status: "Approved", effectiveDate: "2024-05-01", nextReviewDate: "2025-05-01"},
+    {id: "LP-01", title: "Laboratory Safety", clause: "4.6", section: "4", owner: "Lab Manager", freq: "Quarterly review", processes: 6, forms: 4, revision: "Rev 02", status: "Approved", effectiveDate: "2024-02-01", nextReviewDate: "2025-02-01"},
+    {id: "EP-01", title: "Calibration & Maintenance", clause: "6.4", section: "6", owner: "Lab Manager", freq: "Per schedule", processes: 5, forms: 3, revision: "Rev 02", status: "Approved", effectiveDate: "2024-04-01", nextReviewDate: "2025-04-01"},
+  ],
+  clauses: [
+    {id: "4.1", title: "Impartiality & Confidentiality", section: 4, status: "Full", sops: ["QP-01"], forms: ["POL-02"], gapDesc: null, gapOwner: null, gapDue: null},
+    {id: "5.1", title: "Organizational Structure", section: 5, status: "Full", sops: ["QP-01"], forms: ["QM §5"], gapDesc: null, gapOwner: null, gapDue: null},
+    {id: "7.2", title: "Selection & Verification of Methods", section: 7, status: "Full", sops: ["QP-08"], forms: ["FM QP08.01"], gapDesc: null, gapOwner: null, gapDue: null},
+    {id: "7.3", title: "Sampling", section: 7, status: "Partial", sops: ["QP-06", "LP-01"], forms: ["FM QP06.02"], gapDesc: "Dedicated sampling SOP in development", gapOwner: "I. Gonzalez", gapDue: "2026-04-30"},
+    {id: "8.5", title: "Risk Management", section: 8, status: "Full", sops: ["QP-15"], forms: ["FE-QP15.01"], gapDesc: null, gapOwner: null, gapDue: null},
+  ],
+  activities: [
+    {id: 1, title: "Perform a chemical analysis", icon: "🧪", sops: ["QP-08", "QP-10"], keywords: ["test", "analysis", "measurement"]},
+    {id: 2, title: "Handle a customer complaint", icon: "💬", sops: ["QP-10", "QP-12"], keywords: ["complaint", "issue", "customer"]},
+    {id: 3, title: "Conduct equipment maintenance", icon: "🔧", sops: ["EP-01"], keywords: ["equipment", "calibration", "maintenance"]},
+    {id: 4, title: "Review a service contract", icon: "📄", sops: ["QP-06", "QP-07"], keywords: ["contract", "scope", "requirements"]},
+  ],
+  processSteps: [
+    {sopId: "QP-08", steps: [{num: 1, title: "Sample Receipt & Labeling", instr: "Verify sample identity and condition; label with tracking code", form: "FM QP08.01", person: "Analyst"}, {num: 2, title: "Pre-Analysis QC", instr: "Run blank and control samples; document results", form: "FM QP08.02", person: "Analyst"}, {num: 3, title: "Sample Analysis", instr: "Execute validated analytical method; record raw data", form: "FM QP08.03", person: "Senior Analyst"}]},
+    {sopId: "QP-06", steps: [{num: 1, title: "Contract Review", instr: "Assess scope, timeline, and lab capability", form: "FM QP06.02", person: "QA Manager"}, {num: 2, title: "Acceptance Decision", instr: "Approve or request modifications", form: "FM QP06.03", person: "Lab Director"}]},
+    {sopId: "EP-01", steps: [{num: 1, title: "Schedule Calibration", instr: "Identify equipment and due date; contact external calibration provider", form: "FM EP01.01", person: "Lab Manager"}, {num: 2, title: "Receive Certificate", instr: "File calibration cert and update equipment record", form: "FM EP01.02", person: "Lab Technician"}]},
+  ],
+  timeline: [
+    {title: "SOP Development", date: "2023-06", status: "Completed", order: 1},
+    {title: "Equipment Calibration", date: "2024-01", status: "Completed", order: 2},
+    {title: "Personnel Training", date: "2024-06", status: "Completed", order: 3},
+    {title: "Quality Manual Rev 2", date: "2024-05", status: "Completed", order: 4},
+    {title: "Internal Audit (QP-17)", date: "2026-06", status: "In Progress", order: 5},
+    {title: "External Assessment", date: "2026-07", status: "Planned", order: 6},
+    {title: "Accreditation Grant", date: "2026-09", status: "Planned", order: 7},
+  ]
+};
+
+// ════════════════════════════════════════════════════════════════════════════════
+// INITIALIZATION & CORE FUNCTIONS
+// ════════════════════════════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  initializeApp();
+  setupPersonaBar();
+  setupKeyboardShortcuts();
+  restorePersonaFromSession();
+  loadAndRenderData();
+  setLastUpdated();
+});
+
+function initializeApp() {
+  // Update header with config
+  document.querySelector('.app-header h1').innerHTML = `⚗️ ${config.lab.name}`;
+  document.querySelector('.app-header p').innerHTML = `Quality Management System Dashboard — ${config.lab.standard}`;
+
+  // Update footer contact
+  document.getElementById('custEmail').textContent = config.lab.emailSupport;
+  document.getElementById('custPhone').textContent = config.lab.phone;
+  document.getElementById('custAddr').textContent = config.lab.address;
+}
+
+function setupPersonaBar() {
+  document.querySelectorAll('.persona-btn').forEach(btn => {
+    btn.addEventListener('click', switchPersona);
+  });
+  document.getElementById('helpBtn').addEventListener('click', () => {
+    document.getElementById('helpOverlay').classList.add('active');
+  });
+}
+
+function setupKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    const personaMap = {'1': 'topMgmt', '2': 'labMgmt', '3': 'qaMgr', '4': 'analyst', '5': 'customer', '6': 'auditor', '?': 'help'};
+    if (personaMap[e.key]) {
+      if (e.key === '?') {
+        document.getElementById('helpOverlay').classList.add('active');
+      } else {
+        switchPersona({target: document.querySelector(`[data-persona="${personaMap[e.key]}"]`)});
+      }
+    }
+  });
+}
+
+function restorePersonaFromSession() {
+  const saved = sessionStorage.getItem('activePersona');
+  if (saved) switchPersona({target: document.querySelector(`[data-persona="${saved}"]`)});
+}
+
+function switchPersona(e) {
+  document.querySelectorAll('.persona-btn').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  const persona = e.target.getAttribute('data-persona');
+  sessionStorage.setItem('activePersona', persona);
+
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(persona).classList.add('active');
+}
+
+function setLastUpdated() {
+  const now = new Date();
+  const formatted = now.toLocaleString('en-US', {year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+  document.getElementById('lastUpdated').textContent = formatted;
+  updateStatusDot();
+}
+
+function updateStatusDot() {
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  const now = new Date();
+  const hour = now.getHours();
+
+  if (hour >= 9 && hour < 17) {
+    dot.className = 'status-dot';
+    text.textContent = 'System Active';
+  } else {
+    dot.className = 'status-dot amber';
+    text.textContent = 'Off Hours';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// DATA LOADING & METRICS
+// ════════════════════════════════════════════════════════════════════════════════
+
+function loadAndRenderData() {
+  computeMetrics();
+  renderTopManagement();
+  renderLabManager();
+  renderQAManager();
+  renderAnalyst();
+  renderCustomerSupport();
+  renderAuditor();
+}
+
+function computeMetrics() {
+  const sopCount = qmsData.sops.length;
+  const clauseCount = qmsData.clauses.filter(c => c.status !== 'N/A').length;
+  const addressedCount = qmsData.clauses.filter(c => c.status !== 'Gap' && c.status !== 'N/A').length;
+  const formCount = 86; // From v03
+  const processCount = qmsData.sops.reduce((sum, sop) => sum + sop.processes, 0);
+
+  // Top Management
+  document.getElementById('sopCount').textContent = sopCount;
+  document.getElementById('formCount').textContent = formCount;
+  document.getElementById('clauseCount').textContent = addressedCount;
+  document.getElementById('processCount').textContent = processCount;
+
+  // Lab Manager
+  document.getElementById('lmSopCount').textContent = sopCount;
+  document.getElementById('lmFormCount').textContent = formCount;
+  document.getElementById('lmProcCount').textContent = processCount;
+  document.getElementById('lmEqCount').textContent = qmsData.sops.filter(s => s.id.startsWith('EP')).length;
+  document.getElementById('lmLabCount').textContent = qmsData.sops.filter(s => s.id.startsWith('LP')).length;
+  document.getElementById('lmQaCount').textContent = qmsData.sops.filter(s => s.id.startsWith('QP')).length;
+
+  // QA Manager
+  document.getElementById('qaClauseRatio').textContent = `${addressedCount}/${clauseCount}`;
+  document.getElementById('qaGapCount').textContent = qmsData.clauses.filter(c => c.status === 'Partial' || c.status === 'Gap').length;
+  document.getElementById('qaFormCount').textContent = formCount;
+
+  // Return for further use
+  return {sopCount, clauseCount: addressedCount, formCount, processCount};
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// TOP MANAGEMENT VIEW
+// ════════════════════════════════════════════════════════════════════════════════
+
+function renderTopManagement() {
+  renderComplianceStatement();
+  renderComplianceCards();
+  renderRadarChart();
+  renderDistributionChart();
+  renderTimeline();
+  renderActionBox();
+}
+
+function renderComplianceStatement() {
+  const addressedClauses = qmsData.clauses.filter(c => c.status !== 'Gap' && c.status !== 'N/A').length;
+  const totalClauses = qmsData.clauses.filter(c => c.status !== 'N/A').length;
+  const sopCount = qmsData.sops.length;
+  const formCount = 86;
+  const gapClause = qmsData.clauses.find(c => c.status === 'Partial');
+  const gapText = gapClause ? `One minor gap (Clause ${gapClause.id} – ${gapClause.title}) is scheduled for resolution by ${formatDate(gapClause.gapDue)}.` : '';
+
+  const stmt = `${config.lab.name} has designed and implemented its Quality Management System in full conformance with ${config.lab.standard}. ${addressedClauses} of ${totalClauses} clauses are addressed through ${sopCount} Standard Operating Procedures, supported by ${formCount} documented forms and records. The system covers all phases of laboratory activity from contract review through result reporting, and establishes clear processes for personnel competency, equipment management, metrological traceability, and continual improvement. ${gapText}`;
+
+  document.getElementById('complianceStmt').textContent = stmt;
+}
+
+function renderComplianceCards() {
+  const container = document.getElementById('complianceCards');
+  container.innerHTML = '';
+
+  qmsData.clauses.forEach(clause => {
+    const statusClass = clause.status.toLowerCase();
+    const badge = `<span class="cbadge ${statusClass}">✓ ${clause.status}</span>`;
+
+    const card = document.createElement('div');
+    card.className = `badge-card ${statusClass}`;
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;"><span class="clause-num">${clause.id}</span>${badge}</div>
+      <h4>${clause.title}</h4>
+      <p>${clause.sops.join(', ')} · ${clause.forms.join(', ')}</p>
+      ${clause.gapDesc ? `<div class="sop-ref">⚠ ${clause.gapDesc}</div>` : ''}
+    `;
+    container.appendChild(card);
+  });
+}
+
+function renderRadarChart() {
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  const sections = [4, 5, 6, 7, 8];
+  const data = sections.map(sec => {
+    const clausesInSec = qmsData.clauses.filter(c => c.section === sec && c.status !== 'N/A');
+    const addressedInSec = clausesInSec.filter(c => c.status !== 'Gap');
+    return clausesInSec.length > 0 ? (addressedInSec.length / clausesInSec.length).toFixed(2) : 0;
+  });
+
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Section 4', 'Section 5', 'Section 6', 'Section 7', 'Section 8'],
+      datasets: [{label: 'Coverage Ratio', data: data, borderColor: '#003d7a', backgroundColor: 'rgba(0,61,122,.15)', tension: 0.2}]
+    },
+    options: {scales: {r: {beginAtZero: true, max: 1}}, plugins: {legend: {display: false}}}
+  });
+}
+
+function renderDistributionChart() {
+  const ctx = document.getElementById('distChart').getContext('2d');
+  const sections = {4: [], 5: [], 6: [], 7: [], 8: []};
+  qmsData.sops.forEach(sop => sections[sop.section].push(sop));
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Section 4', 'Section 5', 'Section 6', 'Section 7', 'Section 8'],
+      datasets: [{label: 'SOP Count', data: Object.values(sections).map(a => a.length), backgroundColor: '#003d7a'}]
+    },
+    options: {indexAxis: 'y', plugins: {legend: {display: false}}, scales: {x: {beginAtZero: true}}}
+  });
+}
+
+function renderTimeline() {
+  const container = document.getElementById('timelineContainer');
+  container.innerHTML = `
+    <div class="timeline-items">
+      ${qmsData.timeline.map(t => `
+        <div class="timeline-item">
+          <div class="timeline-dot ${t.status.toLowerCase().replace(' ', '-')}"></div>
+          <div class="timeline-label">${t.title}</div>
+          <div class="timeline-year">${formatDate(t.date, 'MMM YYYY')}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderActionBox() {
+  const gaps = qmsData.clauses.filter(c => c.status === 'Partial' || c.status === 'Gap');
+  if (gaps.length === 0) return;
+
+  const html = gaps.map(gap => `<li>§${gap.id} ${gap.title} — ${gap.gapDesc} Owner: ${gap.gapOwner} (Due: ${formatDate(gap.gapDue)})</li>`).join('');
+  document.getElementById('actionBox').innerHTML = `<div class="action-box"><strong>⚠ Action Required:</strong><ul style="list-style:none;margin-top:.5rem;">${html}</ul></div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// LAB MANAGER VIEW
+// ════════════════════════════════════════════════════════════════════════════════
+
+function renderLabManager() {
+  renderSOPList();
+  setupSOPSearch();
+  document.addEventListener('sop-selected', renderSOPDetail);
+}
+
+function renderSOPList() {
+  const container = document.getElementById('sopListContainer');
+  container.innerHTML = '<p style="font-size:.8rem;color:var(--slate);margin-bottom:.85rem;">Click a procedure to view processes, forms, and relationships →</p>';
+
+  qmsData.sops.forEach(sop => {
+    const statusBg = sop.status === 'Approved' ? 'background:var(--green);' : sop.status === 'Under Review' ? 'background:var(--orange);' : 'background:#999;';
+    const card = document.createElement('div');
+    card.className = 'sop-card';
+    card.innerHTML = `
+      <div class="sop-title">${sop.id} ${sop.title}</div>
+      <div class="sop-meta">
+        <span>§${sop.clause}</span>
+        <span>${sop.owner}</span>
+        <span class="sop-badge rev">${sop.revision}</span>
+        <span class="sop-badge status" style="${statusBg}">${sop.status}</span>
+      </div>
+      <div class="sop-stats">
+        <span>📋 ${sop.processes} processes</span>
+        <span>📄 ${sop.forms} forms</span>
+      </div>
+    `;
+    card.addEventListener('click', () => selectSOP(sop));
+    container.appendChild(card);
+  });
+}
+
+function setupSOPSearch() {
+  document.getElementById('sopSearch').addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    document.querySelectorAll('.sop-card').forEach(card => {
+      const text = card.textContent.toLowerCase();
+      card.style.display = text.includes(query) ? 'block' : 'none';
+    });
+  });
+}
+
+function selectSOP(sop) {
+  document.querySelectorAll('.sop-card').forEach(c => c.classList.remove('selected'));
+  event.target.closest('.sop-card').classList.add('selected');
+  document.dispatchEvent(new CustomEvent('sop-selected', {detail: sop}));
+}
+
+function renderSOPDetail(e) {
+  const sop = e.detail;
+  const steps = qmsData.processSteps.find(p => p.sopId === sop.id);
+
+  const detailPane = document.getElementById('sopDetailPane');
+  detailPane.innerHTML = `
+    <div class="sdp-number">${sop.id}</div>
+    <div class="sdp-title">${sop.title}</div>
+    <div class="sdp-grid">
+      <div><strong>Owner:</strong> ${sop.owner}</div>
+      <div><strong>Frequency:</strong> ${sop.freq}</div>
+      <div><strong>Revision:</strong> ${sop.revision}</div>
+      <div><strong>Status:</strong> ${sop.status}</div>
+      <div><strong>Effective:</strong> ${formatDate(sop.effectiveDate)}</div>
+      <div><strong>Next Review:</strong> ${formatDate(sop.nextReviewDate)}</div>
+    </div>
+    ${steps ? `
+      <div class="steps-section">
+        <div class="steps-section-title">Process Steps</div>
+        ${steps.steps.map(s => `
+          <div class="step-item">
+            <div class="step-num">Step ${s.num}: ${s.title}</div>
+            <div class="step-desc">${s.instr}</div>
+            <div class="step-form">📄 Form: ${s.form} | Person: ${s.person}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+    <div class="rel-box">
+      <div class="rel-title">Related SOPs</div>
+      <div class="rel-items">
+        ${qmsData.clauses.filter(c => c.sops.includes(sop.id)).map(c => `<span class="rel-item">§${c.id}</span>`).join('')}
+      </div>
+    </div>
+    <div class="network-box">
+      <div class="network-title">SOP Relationships Network</div>
+      <div id="networkViz" style="width:100%;height:280px;"></div>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// QA MANAGER VIEW
+// ════════════════════════════════════════════════════════════════════════════════
+
+function renderQAManager() {
+  renderComplianceMatrix();
+  renderQAGapBox();
+  document.getElementById('matrixSearch').addEventListener('input', filterMatrix);
+}
+
+function renderComplianceMatrix() {
+  const thead = document.getElementById('matrixHead');
+  const tbody = document.getElementById('matrixBody');
+
+  thead.innerHTML = `<tr><th style="writing-mode:initial;height:auto;">SOP</th>${qmsData.clauses.map(c => `<th>${c.id}</th>`).join('')}</tr>`;
+  tbody.innerHTML = '';
+
+  qmsData.sops.forEach(sop => {
+    const row = document.createElement('tr');
+    row.innerHTML = `<td class="row-hdr">${sop.id}</td>${qmsData.clauses.map(c => {
+      const covered = c.sops.includes(sop.id);
+      return `<td class="mc ${covered ? 'covered' : 'empty'}" data-sop="${sop.id}" data-clause="${c.id}"></td>`;
+    }).join('')}`;
+    row.querySelector('.row-hdr').addEventListener('click', () => highlightSOPClauses(sop.id));
+    tbody.appendChild(row);
+  });
+}
+
+function filterMatrix(e) {
+  const query = e.target.value.toLowerCase();
+  document.querySelectorAll('#matrixBody tr').forEach(row => {
+    const sopId = row.querySelector('.row-hdr').textContent;
+    row.querySelectorAll('.mc').forEach(cell => {
+      const clauseId = cell.getAttribute('data-clause');
+      const show = sopId.toLowerCase().includes(query) || clauseId.includes(query);
+      cell.parentElement.style.display = show ? 'table-row' : 'none';
+    });
+  });
+}
+
+function highlightSOPClauses(sopId) {
+  document.querySelectorAll('.mc').forEach(cell => {
+    cell.classList.remove('highlighted');
+    if (cell.getAttribute('data-sop') === sopId && cell.getAttribute('data-clause')) {
+      cell.classList.add('highlighted');
+    }
+  });
+}
+
+function renderQAGapBox() {
+  const gaps = qmsData.clauses.filter(c => c.status === 'Partial' || c.status === 'Gap');
+  const html = gaps.length > 0
+    ? gaps.map(g => `<li>§${g.id} ${g.title} — ${g.gapDesc || 'Under review'}</li>`).join('')
+    : '<li>No gaps identified</li>';
+
+  document.getElementById('qaGapBox').innerHTML = `
+    <div class="hl-box">
+      <h4>Gap Action</h4>
+      <ul>${html}</ul>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// ANALYST (LAB PERSONNEL) VIEW
+// ════════════════════════════════════════════════════════════════════════════════
+
+function renderAnalyst() {
+  renderActivityGrid();
+  setupActivitySearch();
+}
+
+function renderActivityGrid() {
+  const container = document.getElementById('activityGrid');
+  container.innerHTML = '';
+
+  qmsData.activities.forEach(act => {
+    const card = document.createElement('div');
+    card.className = 'act-card';
+    card.innerHTML = `
+      <div class="act-icon">${act.icon}</div>
+      <div class="act-title">${act.title}</div>
+      <div class="act-sops">${act.sops.map(s => `<span class="act-pill">${s}</span>`).join('')}</div>
+    `;
+    card.addEventListener('click', () => expandActivity(act));
+    container.appendChild(card);
+  });
+}
+
+function setupActivitySearch() {
+  const input = document.getElementById('activitySearch');
+  const autocomplete = document.getElementById('autocomplete');
+
+  input.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase();
+    if (!query) {
+      autocomplete.classList.remove('active');
+      return;
+    }
+
+    const matches = qmsData.activities.filter(a => a.title.toLowerCase().includes(query) || a.keywords.some(k => k.includes(query)));
+    autocomplete.innerHTML = matches.map(a => `
+      <div class="ac-item" onclick="expandActivity({id: ${a.id}, title: '${a.title}', icon: '${a.icon}', sops: ${JSON.stringify(a.sops)}})">
+        <div class="ac-item-title">${a.title}</div>
+        <div class="ac-item-sops">${a.sops.join(', ')}</div>
+      </div>
+    `).join('');
+    autocomplete.classList.toggle('active', matches.length > 0);
+  });
+}
+
+function expandActivity(activity) {
+  document.querySelectorAll('.act-card').forEach(c => c.classList.remove('expanded'));
+  event?.target?.closest('.act-card')?.classList.add('expanded');
+
+  const container = document.getElementById('expandedActArea');
+  const sopsHtml = activity.sops.map(sopId => {
+    const sop = qmsData.sops.find(s => s.id === sopId);
+    const steps = qmsData.processSteps.find(p => p.sopId === sopId);
+    return `
+      <div class="ea-step">${sop.id}: ${sop.title}</div>
+      ${steps ? steps.steps.map(s => `
+        <div class="ea-instr"><strong>${s.title}:</strong> ${s.instr}</div>
+        <div class="ea-form">📄 ${s.form} | 👤 ${s.person}</div>
+      `).join('') : '<div class="ea-instr">Follow SOP procedures as documented</div>'}
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="expanded-act show">
+      <div class="ea-title">${activity.icon} ${activity.title}</div>
+      <div style="margin-bottom:1rem;color:var(--slate);font-size:.88rem;">Follow these steps in sequence. Each step must be completed before moving to the next.</div>
+      ${sopsHtml}
+    </div>
+  `;
+  document.getElementById('autocomplete').classList.remove('active');
+  document.getElementById('activitySearch').value = '';
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// CUSTOMER SUPPORT VIEW
+// ════════════════════════════════════════════════════════════════════════════════
+
+function renderCustomerSupport() {
+  const container = document.getElementById('custServiceCards');
+  const cards = [
+    {clause: '7.1', title: 'Service Requests & Contracts', desc: 'Systematic review with 24h quotation; scope, timeline, and requirements confirmed before work begins.', sops: 'QP-06'},
+    {clause: '7.8', title: 'Reporting of Results', desc: 'Professional reports include measurement uncertainty, method references, and QA approval signature before release.', sops: 'QP-11'},
+    {clause: '7.9', title: 'Complaint Handling', desc: 'Acknowledgment within 24 hours; formal investigation; root-cause resolution; written closure notification.', sops: 'QP-12'},
+    {clause: '4.2', title: 'Data Confidentiality', desc: 'Secured OneDrive storage, locked cabinets, legally-enforceable NDAs in service agreements.', sops: 'POL-02'},
+  ];
+
+  container.innerHTML = cards.map(c => `
+    <div class="badge-card full">
+      <div style="display:flex;align-items:center;"><span class="clause-num">${c.clause}</span><span class="cbadge full">✓ Full</span></div>
+      <h4>${c.title}</h4>
+      <p>${c.desc}</p>
+      <div class="sop-ref">📄 ${c.sops}</div>
+    </div>
+  `).join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// AUDITOR VIEW
+// ════════════════════════════════════════════════════════════════════════════════
+
+function renderAuditor() {
+  renderClauseTree();
+  renderCoveragePanel();
+  document.getElementById('checklistBtn').addEventListener('click', showChecklist);
+}
+
+function renderClauseTree() {
+  const container = document.getElementById('clauseTree');
+  const sections = {};
+
+  qmsData.clauses.forEach(c => {
+    if (!sections[c.section]) sections[c.section] = [];
+    sections[c.section].push(c);
+  });
+
+  container.innerHTML = Object.keys(sections).sort().map(sec => `
+    <div class="tree-sec">
+      <div class="tree-sec-hdr">Section ${sec}</div>
+      ${sections[sec].map(c => `
+        <div class="tree-clause" onclick="selectClause('${c.id}')">${c.id} ${c.title}</div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function selectClause(clauseId) {
+  const clause = qmsData.clauses.find(c => c.id === clauseId);
+  if (!clause) return;
+
+  document.querySelectorAll('.tree-clause').forEach(c => c.classList.remove('selected'));
+  event.target.classList.add('selected');
+
+  const panel = document.getElementById('evidencePanel');
+  panel.innerHTML = `
+    <div class="ev-num">${clause.id}</div>
+    <div class="ev-title">${clause.title}</div>
+    <div class="ev-desc">Status: <strong>${clause.status}</strong> — ${clause.sops.join(', ')}</div>
+    <div class="ev-section">
+      <div class="ev-sec-title">Implementing SOPs</div>
+      ${clause.sops.map(sopId => {
+        const sop = qmsData.sops.find(s => s.id === sopId);
+        return `<div class="ev-item"><div class="ev-item-code">${sop.id}</div><div class="ev-item-desc">${sop.title}</div></div>`;
+      }).join('')}
+    </div>
+    <div class="ev-section">
+      <div class="ev-sec-title">Supporting Forms & Records</div>
+      ${clause.forms.map(f => `<div class="ev-item"><div class="ev-item-code link">${f}</div></div>`).join('')}
+    </div>
+    ${clause.gapDesc ? `<div class="audit-note"><strong>Gap:</strong> ${clause.gapDesc} (Due: ${formatDate(clause.gapDue)})</div>` : ''}
+  `;
+}
+
+function renderCoveragePanel() {
+  const addressed = qmsData.clauses.filter(c => c.status !== 'Gap' && c.status !== 'N/A').length;
+  const total = qmsData.clauses.filter(c => c.status !== 'N/A').length;
+
+  const covPanel = document.querySelector('.coverage-panel');
+  const covList = covPanel.querySelector('#covList');
+  covPanel.querySelector('.cov-count').textContent = addressed;
+
+  covList.innerHTML = qmsData.clauses.map(c => {
+    if (c.status === 'N/A') return '';
+    return `<div class="cov-item"><div class="cov-check">✓</div> <span>${c.id} ${c.title}</span></div>`;
+  }).join('');
+}
+
+function showChecklist() {
+  const modal = document.getElementById('checklistModal');
+  const items = document.getElementById('checklistItems');
+
+  items.innerHTML = qmsData.clauses.map((c, i) => `
+    <div class="cl-item">
+      <div class="cl-checkbox" data-id="${c.id}"></div>
+      <div>
+        <div class="cl-id">${c.id}</div>
+        <div class="cl-title">${c.title} — Status: ${c.status}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('.cl-checkbox').forEach(box => {
+    box.addEventListener('click', (e) => {
+      e.currentTarget.style.background = e.currentTarget.style.background ? '' : 'var(--green)';
+    });
+  });
+
+  modal.classList.add('active');
+}
+
+function printChecklist() {
+  window.print();
+}
+
+function exportChecklistCSV() {
+  const rows = [['Clause ID', 'Title', 'Status', 'SOPs', 'Forms']];
+  qmsData.clauses.forEach(c => {
+    rows.push([c.id, c.title, c.status, c.sops.join('; '), c.forms.join('; ')]);
+  });
+
+  const csv = rows.map(r => r.map(cell => `"${cell}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `audit_checklist_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════════════════════════════════════════
+
+function formatDate(dateStr, format = 'MMM DD, YYYY') {
+  if (!dateStr) return '—';
+  const date = new Date(dateStr);
+  if (format === 'MMM YYYY') return date.toLocaleDateString('en-US', {year: 'numeric', month: 'short'});
+  return date.toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'});
+}
+</script>
+
+<style>
+  @media print {
+    body { background: white; }
+    .app-header, .persona-bar, .main > *:not(#checklistModal) { display: none; }
+    #checklistModal { position: static; width: 100%; height: auto; background: white; }
+    .modal-inner { box-shadow: none; max-width: 100%; }
+  }
+</style>
+
+</body>
+</html>
