@@ -281,8 +281,13 @@ textarea.form-input{resize:vertical;min-height:72px;}
   <div class="tabs-user"><div class="avatar" id="navAvatar">?</div><div class="who"><div class="name" id="navName">Loading&hellip;</div><div class="role" id="navRole"></div></div></div>
   <button class="tab-btn active" data-tab="dashboard"><svg width="17" height="17"><use href="#icon-gauge-outline"/></svg> Dashboard</button>
   <button class="tab-btn" data-tab="docs"><svg width="17" height="17"><use href="#icon-document-outline"/></svg> Document Control</button>
-  <button class="tab-btn" data-tab="ops"><svg width="17" height="17"><use href="#icon-warning-outline"/></svg> Quality Operations</button>
-  <button class="tab-btn" data-tab="compass"><svg width="17" height="17"><use href="#icon-search-outline"/></svg> Lab Compass</button>
+  <button class="tab-btn" data-tab="complaints"><svg width="17" height="17"><use href="#icon-comment-outline"/></svg> Complaints</button>
+  <button class="tab-btn" data-tab="ncw"><svg width="17" height="17"><use href="#icon-warning-outline"/></svg> Nonconforming Work</button>
+  <button class="tab-btn" data-tab="ca"><svg width="17" height="17"><use href="#icon-refresh-outline"/></svg> Corrective Actions</button>
+  <button class="tab-btn" data-tab="risks"><svg width="17" height="17"><use href="#icon-chart-histogram-outline"/></svg> Risks &amp; Opportunities</button>
+  <button class="tab-btn" data-tab="ofi"><svg width="17" height="17"><use href="#icon-hint-outline"/></svg> Improvement</button>
+  <button class="tab-btn" data-tab="audits"><svg width="17" height="17"><use href="#icon-check-outline"/></svg> Audits &amp; Reviews</button>
+  <button class="tab-btn" data-tab="compass" style="display:none"><svg width="17" height="17"><use href="#icon-search-outline"/></svg> Lab Compass</button>
  </div>
 </nav>
 
@@ -297,9 +302,9 @@ textarea.form-input{resize:vertical;min-height:72px;}
   <div class="notif-banner">
    <svg width="20" height="20" style="color:var(--gold);flex-shrink:0"><use href="#icon-warning-outline"/></svg>
    <span class="notif-count">3 items need attention</span>
-   <span class="notif-pill" onclick="go('ops','audits')">Surveillance assessment &mdash; May 2026</span>
-   <span class="notif-pill" onclick="go('ops','ca')">CAR26001 verification due</span>
-   <span class="notif-pill" onclick="go('ops','ncw')">NC26003 awaiting PT result</span>
+   <span class="notif-pill" onclick="go('audits')">Surveillance assessment &mdash; May 2026</span>
+   <span class="notif-pill" onclick="go('ca')">CAR26001 verification due</span>
+   <span class="notif-pill" onclick="go('ncw')">NC26003 awaiting PT result</span>
   </div>
   <div class="metrics-row-3" id="kpiRow"></div>
   <div class="metrics-row-4" id="kpiRow2"></div>
@@ -358,27 +363,44 @@ textarea.form-input{resize:vertical;min-height:72px;}
   </div>
  </section>
 
- <!-- S3 QUALITY OPERATIONS -->
- <section id="v-ops" class="view">
+ <!-- S3 COMPLAINTS -->
+ <section id="v-complaints" class="view">
   <div class="page-intro"><h2>Quality Operations</h2><p>The live quality-event lifecycle: complaints, nonconforming work, corrective actions, risks &amp; opportunities, improvement, and audits &mdash; all natively linked.</p></div>
-  <div class="subnav" id="opsNav">
-   <button class="active" data-sub="complaints">Complaints</button>
-   <button data-sub="ncw">Nonconforming Work</button>
-   <button data-sub="ca">Corrective Actions</button>
-   <button data-sub="risks">Risks &amp; Opportunities</button>
-   <button data-sub="ofi">Improvement</button>
-   <button data-sub="audits">Audits</button>
-  </div>
-  <div id="s-complaints" class="subview active"></div>
-  <div id="s-ncw" class="subview"></div>
-  <div id="s-ca" class="subview"></div>
-  <div id="s-risks" class="subview"></div>
-  <div id="s-ofi" class="subview"></div>
-  <div id="s-audits" class="subview"></div>
+  <div id="s-complaints"></div>
  </section>
 
- <!-- S4 LAB COMPASS -->
- <section id="v-compass" class="view">
+ <!-- S4 NONCONFORMING WORK -->
+ <section id="v-ncw" class="view">
+  <div class="page-intro"><h2>Quality Operations</h2><p>The live quality-event lifecycle: complaints, nonconforming work, corrective actions, risks &amp; opportunities, improvement, and audits &mdash; all natively linked.</p></div>
+  <div id="s-ncw"></div>
+ </section>
+
+ <!-- S5 CORRECTIVE ACTIONS -->
+ <section id="v-ca" class="view">
+  <div class="page-intro"><h2>Quality Operations</h2><p>The live quality-event lifecycle: complaints, nonconforming work, corrective actions, risks &amp; opportunities, improvement, and audits &mdash; all natively linked.</p></div>
+  <div id="s-ca"></div>
+ </section>
+
+ <!-- S6 RISKS & OPPORTUNITIES -->
+ <section id="v-risks" class="view">
+  <div class="page-intro"><h2>Quality Operations</h2><p>The live quality-event lifecycle: complaints, nonconforming work, corrective actions, risks &amp; opportunities, improvement, and audits &mdash; all natively linked.</p></div>
+  <div id="s-risks"></div>
+ </section>
+
+ <!-- S7 IMPROVEMENT -->
+ <section id="v-ofi" class="view">
+  <div class="page-intro"><h2>Quality Operations</h2><p>The live quality-event lifecycle: complaints, nonconforming work, corrective actions, risks &amp; opportunities, improvement, and audits &mdash; all natively linked.</p></div>
+  <div id="s-ofi"></div>
+ </section>
+
+ <!-- S8 AUDITS & REVIEWS -->
+ <section id="v-audits" class="view">
+  <div class="page-intro"><h2>Quality Operations</h2><p>The live quality-event lifecycle: complaints, nonconforming work, corrective actions, risks &amp; opportunities, improvement, and audits &mdash; all natively linked.</p></div>
+  <div id="s-audits"></div>
+ </section>
+
+ <!-- LAB COMPASS (hidden — future standalone app) -->
+ <section id="v-compass" class="view" style="display:none">
   <div class="page-intro"><h2>Lab Compass</h2><p>Quick instructions for everyday lab work. Search for what you are doing today, or pick a common task, to see the exact procedure steps, forms, and responsible roles.</p></div>
   <div style="text-align:center;margin-bottom:26px">
    <div class="ac"><input class="search-lg" id="compassSearch" placeholder="What are you doing today?  (e.g. calibrate a balance, log a complaint)" autocomplete="off"><div class="ac-list" id="compassAc"></div></div>
@@ -702,7 +724,7 @@ var OPS_META={
  audits:{list:'audits',h:['Audit ID','Scope','Status','_','Date'],title:'Audits & Reviews',clause:'8.8',modal:'m-audit',btn:'Schedule Audit'}
 };
 
-var TAB_LABELS={dashboard:'Dashboard',docs:'Document Control',ops:'Quality Operations',compass:'Lab Compass'};
+var TAB_LABELS={dashboard:'Dashboard',docs:'Document Control',complaints:'Complaints',ncw:'Nonconforming Work',ca:'Corrective Actions',risks:'Risks & Opportunities',ofi:'Improvement',audits:'Audits & Reviews',compass:'Lab Compass'};
 function switchTab(tab){
  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});
  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
@@ -714,7 +736,7 @@ function switchTab(tab){
 }
 function switchSub(group,sub){
  byId(group+'Nav').querySelectorAll('button').forEach(function(b){b.classList.toggle('active',b.dataset.sub===sub);});
- var views={docs:['register','viewer','network','clause','dcr'],ops:['complaints','ncw','ca','risks','ofi','audits']}[group];
+ var views={docs:['register','viewer','network','clause','dcr']}[group];
  views.forEach(function(s){byId('s-'+s).classList.toggle('active',s===sub);});
  if(sub==='network')setTimeout(drawNetwork,30);
 }
@@ -980,7 +1002,6 @@ function netClick(ev){
 
 document.querySelectorAll('.tab-btn').forEach(function(b){b.addEventListener('click',function(){switchTab(b.dataset.tab);});});
 byId('docsNav').querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){switchSub('docs',b.dataset.sub);});});
-byId('opsNav').querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){switchSub('ops',b.dataset.sub);});});
 document.querySelectorAll('.modal-backdrop').forEach(function(m){m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('open');});});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')document.querySelectorAll('.modal-backdrop.open').forEach(function(m){m.classList.remove('open');});});
 byId('netCanvas').addEventListener('click',netClick);
