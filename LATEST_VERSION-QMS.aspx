@@ -763,7 +763,7 @@ var CACHE = {};
 var DATA_SOURCE = {}; /* key -> 'sp' | 'seed' */
 var SP_URL = '';
 var SP_READY = false;
-var currentUser = { id: null, name: '', position: '', isOwner: false, isLabManager: false };
+var currentUser = { id: null, name: '', position: '', isOwner: false };
 var dcrSelectedAddl = []; /* DocIDs for additional-docs multi-select */
 var dcrGrantedDocs = []; /* session demo of docs granted for workspace tab */
 
@@ -1097,14 +1097,10 @@ function setUserDisplay(name, role){
   ["hdrAvatar","navAvatar"].forEach(function(id){ var el=byId(id); if(el) el.textContent = initials; });
 }
 
-function isManagerLike(){
-  if (currentUser.isOwner) return true;
-  var p = String(currentUser.position || '').toLowerCase();
-  return /lab(?:oratory)?\s*manager|quality assurance manager|laboratory director|site owner/.test(p);
-}
 function updateDcrRoleUi(){
+  /* Lab Manager gate = SharePoint site owners (associatedownergroup). */
   var alert = byId('dcrTwoStageAlert');
-  if (alert) alert.style.display = isManagerLike() ? 'none' : '';
+  if (alert) alert.style.display = currentUser.isOwner ? 'none' : '';
   /* Workspace tab stays hidden until a grant exists (demo: dcrGrantedDocs). */
   var btn = byId('btnDcrWorkspace');
   if (btn) btn.hidden = !(dcrGrantedDocs && dcrGrantedDocs.length);
@@ -1128,7 +1124,6 @@ function loadCurrentUserInfo(){
     return Promise.all([getUserPosition(cu.id), checkSiteOwner()]).then(function(pair){
       currentUser.position = pair[0] || '';
       currentUser.isOwner = !!pair[1];
-      currentUser.isLabManager = /lab(?:oratory)?\s*manager/i.test(currentUser.position || '');
       setUserDisplay(cu.name, currentUser.position);
       updateDcrRoleUi();
       return currentUser;
@@ -1510,11 +1505,6 @@ function bindDcrAddlPicker(){
     if (field && !field.contains(e.target)) dd.classList.remove('show');
   });
 }
-function notifyLabManagerDcr(payload){
-  /* Production: Power Automate flow on item-created (or HTTP POST webhook). */
-  console.info('[QMS] DCR notify Lab Manager (email via Power Automate):', payload);
-  return Promise.resolve(true);
-}
 function renderDcrWorkspace(){
   var list = byId('dcrWorkspaceDocs');
   var empty = byId('dcrEditorEmpty');
@@ -1565,7 +1555,7 @@ function openDcrDocInEditor(doc){
   }
 }
 window.submitDcrDraftChanges = function(){
-  showAlert('info', 'Draft submit will notify the Lab Manager for accept/reject (Power Automate). Not wired to a flow yet.');
+  showAlert('info', 'Draft submit for Lab Manager review is not wired yet.');
 };
 window.demoGrantDcrAccess = function(docIds, dueDays){
   /* Dev helper / future Lab Manager action: reveal workspace with granted docs. */
@@ -1610,16 +1600,6 @@ window.saveDcr = function(){
       Stage: 'Draft'
     };
     if (currentUser.id) body.RequestedById = currentUser.id;
-    var notifyPayload = {
-      dcrNumber: dcrNumber,
-      requester: currentUser.name || 'Unknown',
-      requesterId: currentUser.id,
-      primaryDoc: primaryId,
-      additionalDocs: addl,
-      requestType: reqType,
-      changeDriver: driver,
-      rationale: rationale
-    };
     function finish(ok, msg){
       if (btn) { btn.disabled = false; btn.textContent = 'Submit Request'; }
       appendLocal('dcr', uiRow);
@@ -1630,22 +1610,19 @@ window.saveDcr = function(){
       closeModal('m-dcr');
       showAlert(ok ? 'success' : 'info', msg);
     }
-    function afterSave(ok, baseMsg){
-      return notifyLabManagerDcr(notifyPayload).then(function(){
-        finish(ok, baseMsg + ' Lab Manager will be notified by email (Power Automate).');
-      });
-    }
+    /* Email to Lab Manager is a separate Power Automate flow on list item created — app only writes the row. */
     if (!SP_READY) {
-      return afterSave(false, 'Saved locally (seed mode).');
+      finish(false, 'Saved locally (seed mode).');
+      return;
     }
     var path = "/_api/web/lists/getbytitle('LS_QP1402r01_ChangeRequests')/items";
     return spPost(path, body).then(function(d){
       if (d && d.Id) uiRow._spID = d.Id;
       DATA_SOURCE.dcr = 'sp';
-      return afterSave(true, 'DCR ' + dcrNumber + ' saved to SharePoint.');
+      finish(true, 'DCR ' + dcrNumber + ' saved to SharePoint.');
     }).catch(function(err){
       console.warn('[QMS] DCR SP save failed:', err);
-      return afterSave(false, 'SharePoint save failed (' + (err.message || err) + '). Kept in session.');
+      finish(false, 'SharePoint save failed (' + (err.message || err) + '). Kept in session.');
     });
   }).catch(function(err){
     if (btn) { btn.disabled = false; btn.textContent = 'Submit Request'; }
