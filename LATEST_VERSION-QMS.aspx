@@ -158,7 +158,7 @@ tbody tr:hover{background:var(--rowhover);}
 .btn-sm{padding:5px 12px;font-size:12px;}
 
 /* info boxes */
-.info-box{border-radius:4px;padding:.8rem 1rem;font-size:.85rem;line-height:1.5;margin-top:12px;}
+.info-box{border-radius:4px;padding:.8rem 1rem;font-size:.85rem;line-height:1.5;margin-top:12px;margin-bottom:16px;}
 .info-box.blue{background:var(--blue-bg);border-left:4px solid var(--blue);color:var(--info);}
 .info-box.amber{background:#FFF3E0;border-left:4px solid var(--gold);color:#78350F;}
 .info-box.green{background:#E8F5E9;border-left:4px solid var(--green);color:#155724;}
@@ -240,7 +240,8 @@ tbody tr:hover{background:var(--rowhover);}
 .modal-close:hover{background:var(--border);color:var(--text);}
 .modal-body{padding:20px 22px;max-height:70vh;overflow-y:auto;}
 .modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:var(--sect);border-radius:0 0 8px 8px;}
-.section-title{font-size:15px;font-weight:600;color:var(--blue);border-bottom:2px solid var(--gold);padding-bottom:6px;margin-bottom:14px;display:block;}
+.section-title{font-size:15px;font-weight:600;color:var(--blue);border-bottom:2px solid var(--gold);padding-bottom:6px;margin-top:20px;margin-bottom:14px;display:block;}
+.modal-body>.section-title:first-child{margin-top:0;}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
 .form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
 .form-group.span-2,.form-grid.cols-1{grid-column:1/-1;}
@@ -469,7 +470,21 @@ textarea.form-input{resize:vertical;min-height:72px;}
    </div>
 
    <div class="section-title">Section 02 &mdash; Description of the Nonconforming Work</div>
-   <div class="form-group"><label>Category of the Nonconformance <span class="req">*</span></label><select class="form-input" name="NCCategory" multiple size="4"><option>Procedural</option><option>Instrumentation &amp; Equipment</option><option>Documentation &amp; Record Keeping</option><option>Sample Handling</option><option>Personnel Training &amp; Competence</option><option>Quality Control</option><option>Environmental Conditions</option><option>Reporting Errors (Test Reports)</option><option>Supplier Related</option><option>Safety</option><option>Other</option></select></div>
+   <div class="form-group"><label>Category of the Nonconformance <span class="req">*</span></label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin-top:4px;font-size:13px">
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Procedural"> Procedural</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Instrumentation &amp; Equipment"> Instrumentation &amp; Equipment</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Documentation &amp; Record Keeping"> Documentation &amp; Record Keeping</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Sample Handling"> Sample Handling</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Personnel Training &amp; Competence"> Personnel Training &amp; Competence</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Quality Control"> Quality Control</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Environmental Conditions"> Environmental Conditions</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Reporting Errors (Test Reports)"> Reporting Errors (Test Reports)</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Supplier Related"> Supplier Related</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Safety"> Safety</label>
+     <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="NCCategory" value="Other"> Other</label>
+    </div>
+   </div>
    <div class="form-grid">
     <div class="form-group"><label>Related Sample</label><input class="form-input" name="RelatedSample" placeholder="N/A" value="N/A"></div>
     <div class="form-group"><label>Internal ID #</label><input class="form-input" name="InternalID"></div>
@@ -537,7 +552,13 @@ textarea.form-input{resize:vertical;min-height:72px;}
    </div>
    <div class="form-grid">
     <div class="form-group"><label>Was the root cause identified? <span class="req">*</span></label><select class="form-input" name="RootCauseIdentified"><option>No</option><option>Yes</option></select></div>
-    <div class="form-group"><label>Root-Cause Tool(s) Used</label><select class="form-input" name="RCAToolUsed" multiple size="3"><option>Brainstorm (FM QP16.02)</option><option>Fishbone / Ishikawa (FM QP16.03)</option><option>Five Whys (FM QP16.04)</option></select></div>
+    <div class="form-group"><label>Root-Cause Tool(s) Used</label>
+     <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;font-size:13px">
+      <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="RCAToolUsed" value="Brainstorm (FM QP16.02)"> Brainstorm (FM QP16.02)</label>
+      <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="RCAToolUsed" value="Fishbone / Ishikawa (FM QP16.03)"> Fishbone / Ishikawa (FM QP16.03)</label>
+      <label style="font-weight:400;display:flex;align-items:center;gap:6px"><input type="checkbox" name="RCAToolUsed" value="Five Whys (FM QP16.04)"> Five Whys (FM QP16.04)</label>
+     </div>
+    </div>
    </div>
    <div class="form-group span-2"><label>Root Cause</label><textarea class="form-input" name="RootCause" placeholder="The determined root cause(s)"></textarea></div>
 
