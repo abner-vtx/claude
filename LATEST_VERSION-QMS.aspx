@@ -716,19 +716,23 @@ var SP_READY = false;
 var currentUser = { id: null, name: '', position: '' };
 
 /* Blob key -> SharePoint list title. Keys omitted here always stay on seed
-   (clausemap/clausecols/activity/activity_tasks have no dedicated lists yet). */
+   (clausemap/clausecols/activity/activity_tasks have no dedicated lists yet).
+   Prefer minimal $select (no lookup expands) — wrong field names cause GET 400.
+   On 400/404 we retry a bare /items query, then fall back to seed. */
 var LIST_MAP = {
-  register:   { title: 'LS_QP1401r01_DocumentRegister', select: 'Id,DocID,Title,DocType,Revision,Status,Tier,Department' },
-  steps:      { title: 'LS_SOPProcessSteps', select: 'Id,SOPRefId,StepNumber,StepTitle,StepOrder,StepSummary,FormsReferenced,ResponsibleRole', expand: 'SOPRef', expandSelect: 'SOPRef/DocID' },
-  edges:      { title: 'LS_SOPRelationships', select: 'Id,SourceSOPId,TargetSOPId,RelationshipType,MentionCount,Description', expand: 'SourceSOP,TargetSOP', expandSelect: 'SourceSOP/DocID,TargetSOP/DocID' },
-  complaints: { title: 'LS_QP1201r01_Complaints', select: 'Id,RecordID,Category,SubmitterCompany,Description,Status,ReceivedDate' },
-  ncw:        { title: 'LS_QP1301r01_NonconformingWork', select: 'Id,RecordID,Description,Status,ReportedDate' },
-  ca:         { title: 'LS_QP1601r01_CorrectiveActions', select: 'Id,CARID,ProblemStatement,Status,RecordedDate,ReferenceNC' },
-  risks:      { title: 'LS_QP1501r01_ActionPlans', select: 'Id,PlanID,Goal,Status,InitiationDate,Type' },
-  ofi:        { title: 'LS_QP1503r01_Improvement', select: 'Id,OFIID,Idea,Status,SubmittedDate' },
-  audits:     { title: 'LS_QP1701r01_AuditNotification', select: 'Id,AuditID,Scope,Status,AuditStartDate,Objectives' },
-  dcr:        { title: 'LS_QP1402r01_ChangeRequests', select: 'Id,DCRNumber,RequestTitle,RequestType,ChangeDriver,Stage,RequestDate' }
+  register:   { title: 'LS_QP1401r01_DocumentRegister' },
+  steps:      { title: 'LS_SOPProcessSteps' },
+  edges:      { title: 'LS_SOPRelationships' },
+  complaints: { title: 'LS_QP1201r01_Complaints' },
+  ncw:        { title: 'LS_QP1301r01_NonconformingWork' },
+  ca:         { title: 'LS_QP1601r01_CorrectiveActions' },
+  risks:      { title: 'LS_QP1501r01_ActionPlans' },
+  ofi:        { title: 'LS_QP1503r01_Improvement' },
+  audits:     { title: 'LS_QP1701r01_AuditNotification' },
+  dcr:        { title: 'LS_QP1402r01_ChangeRequests' }
 };
+/* Id (list item) -> DocID for resolving lookup IDs on steps/edges */
+var REGISTER_BY_SPID = {};
 
 function statusClass(st){
   st = String(st || '').toLowerCase();
@@ -742,10 +746,25 @@ function dateOnly(v){
   var s = String(v);
   return s.length >= 10 ? s.slice(0,10) : s;
 }
+function firstStr(){
+  for (var i = 0; i < arguments.length; i++) {
+    var v = arguments[i];
+    if (v == null || v === '') continue;
+    if (typeof v === 'object') {
+      var nested = v.DocID || v.RecordID || v.Title || v.Value || '';
+      if (nested) return String(nested);
+      continue;
+    }
+    return String(v);
+  }
+  return '';
+}
 function lookupDocId(item, field){
   var nested = item[field];
   if (nested && typeof nested === 'object') return nested.DocID || nested.Title || '';
   if (typeof nested === 'string' && nested) return nested;
+  var idKey = field + 'Id';
+  if (item[idKey] != null && REGISTER_BY_SPID[item[idKey]]) return REGISTER_BY_SPID[item[idKey]];
   return '';
 }
 function mapDocType(dt){
@@ -761,10 +780,10 @@ function mapDocType(dt){
 var MAPPERS = {
   register: function(it){
     return {
-      id: it.DocID || it.Title || '',
-      title: it.Title || '',
-      type: mapDocType(it.DocType),
-      rev: it.Revision || '',
+      id: firstStr(it.DocID, it.DocumentID, it.Title),
+      title: firstStr(it.Title, it.DocTitle),
+      type: mapDocType(it.DocType || it.TypeOfDocument || it.Type),
+      rev: firstStr(it.Revision, it.Rev, it.Version),
       steps: 0,
       scanned: /Obsolete|Superseded/i.test(it.Status || '') ? 'Yes' : 'No',
       status: it.Status || '',
@@ -773,31 +792,31 @@ var MAPPERS = {
   },
   steps: function(it){
     return {
-      sop: lookupDocId(it, 'SOPRef') || '',
-      num: it.StepNumber || '',
-      title: it.StepTitle || '',
-      order: it.StepOrder || 0,
-      sum: it.StepSummary || '',
-      forms: it.FormsReferenced || '',
-      role: it.ResponsibleRole || '',
+      sop: lookupDocId(it, 'SOPRef') || firstStr(it.SOPID, it.SOP, it.SopId),
+      num: firstStr(it.StepNumber, it.Step_x0020_Number, it.Num),
+      title: firstStr(it.StepTitle, it.Title, it.Step_x0020_Title),
+      order: it.StepOrder != null ? it.StepOrder : (it.Order0 != null ? it.Order0 : 0),
+      sum: firstStr(it.StepSummary, it.Summary),
+      forms: firstStr(it.FormsReferenced, it.Forms),
+      role: firstStr(it.ResponsibleRole, it.Role),
       _spID: it.Id
     };
   },
   edges: function(it){
     return {
-      s: lookupDocId(it, 'SourceSOP') || '',
-      t: lookupDocId(it, 'TargetSOP') || '',
-      type: it.RelationshipType || 'References',
-      w: it.MentionCount || 1,
+      s: lookupDocId(it, 'SourceSOP') || firstStr(it.Source, it.SourceID),
+      t: lookupDocId(it, 'TargetSOP') || firstStr(it.Target, it.TargetID),
+      type: firstStr(it.RelationshipType, it.Type) || 'References',
+      w: it.MentionCount != null ? it.MentionCount : (it.Weight != null ? it.Weight : 1),
       _spID: it.Id
     };
   },
   complaints: function(it){
     var st = it.Status || '';
     return {
-      id: it.RecordID || '',
-      c1: it.SubmitterCompany || '',
-      c2: it.Category || '',
+      id: firstStr(it.RecordID, it.Title),
+      c1: firstStr(it.SubmitterCompany, it.Company),
+      c2: firstStr(it.Category),
       st: st,
       stc: statusClass(st),
       d: dateOnly(it.ReceivedDate),
@@ -807,8 +826,8 @@ var MAPPERS = {
   ncw: function(it){
     var st = it.Status || '';
     return {
-      id: it.RecordID || '',
-      c1: it.Description || '',
+      id: firstStr(it.RecordID, it.Title),
+      c1: firstStr(it.Description, it.Title),
       c2: st,
       stc: statusClass(st),
       d: dateOnly(it.ReportedDate),
@@ -820,8 +839,8 @@ var MAPPERS = {
     var src = '';
     if (it.ReferenceNC && typeof it.ReferenceNC === 'object') src = it.ReferenceNC.RecordID || '';
     return {
-      id: it.CARID || '',
-      c1: (src ? (src + ' &mdash; ') : '') + (it.ProblemStatement || ''),
+      id: firstStr(it.CARID, it.Title),
+      c1: (src ? (src + ' &mdash; ') : '') + firstStr(it.ProblemStatement, it.Title),
       c2: st,
       stc: statusClass(st),
       d: dateOnly(it.RecordedDate),
@@ -831,60 +850,67 @@ var MAPPERS = {
   risks: function(it){
     var st = it.Status || '';
     return {
-      id: it.PlanID || '',
-      c1: it.Goal || '',
+      id: firstStr(it.PlanID, it.Title),
+      c1: firstStr(it.Goal, it.Title),
       c2: st,
       stc: statusClass(st),
-      d: dateOnly(it.InitiationDate),
+      d: dateOnly(it.InitiationDate || it.Created),
       _spID: it.Id
     };
   },
   ofi: function(it){
     var st = it.Status || '';
     return {
-      id: it.OFIID || '',
-      c1: it.Idea || '',
+      id: firstStr(it.OFIID, it.Title),
+      c1: firstStr(it.Idea, it.Title),
       c2: st,
       stc: statusClass(st),
-      d: dateOnly(it.SubmittedDate),
+      d: dateOnly(it.SubmittedDate || it.Created),
       _spID: it.Id
     };
   },
   audits: function(it){
     var st = it.Status || '';
     return {
-      id: it.AuditID || '',
-      c1: it.Scope || it.Objectives || '',
+      id: firstStr(it.AuditID, it.Title),
+      c1: firstStr(it.Scope, it.Objectives, it.Title),
       c2: st,
       stc: statusClass(st),
-      d: dateOnly(it.AuditStartDate),
+      d: dateOnly(it.AuditStartDate || it.Created),
       _spID: it.Id
     };
   },
   dcr: function(it){
     var stage = it.Stage || '';
     return {
-      id: it.DCRNumber || '',
-      title: it.RequestTitle || '',
-      type: it.RequestType || '',
-      driver: it.ChangeDriver || '',
+      id: firstStr(it.DCRNumber, it.Title),
+      title: firstStr(it.RequestTitle, it.Title),
+      type: firstStr(it.RequestType),
+      driver: firstStr(it.ChangeDriver),
       stage: stage,
       stc: statusClass(stage),
-      date: dateOnly(it.RequestDate),
+      date: dateOnly(it.RequestDate || it.Created),
       _spID: it.Id
     };
   }
 };
 
-function useSeed(key){
+function useSeed(key, reason){
   CACHE[key] = (SEED[key] || []).slice();
   DATA_SOURCE[key] = 'seed';
+  if (reason) console.warn('[QMS] Using seed for', key + ':', reason);
 }
 function enrichRegisterStepCounts(){
   var steps = CACHE.steps || [];
   var counts = {};
   steps.forEach(function(s){ if (s.sop) counts[s.sop] = (counts[s.sop] || 0) + 1; });
   (CACHE.register || []).forEach(function(n){ if (!n.steps) n.steps = counts[n.id] || 0; });
+}
+function rebuildRegisterIndex(){
+  REGISTER_BY_SPID = {};
+  (CACHE.register || []).forEach(function(n){
+    if (n._spID != null && n.id) REGISTER_BY_SPID[n._spID] = n.id;
+  });
 }
 
 var SP = {
@@ -1093,7 +1119,16 @@ function spGetAll(path){
       credentials: 'include',
       headers: { 'Accept': 'application/json;odata=nometadata' }
     }).then(function(r){
-      if (!r.ok) throw new Error('GET '+r.status);
+      if (!r.ok) {
+        return r.text().then(function(t){
+          var hint = '';
+          try {
+            var j = JSON.parse(t);
+            hint = (j.error && (j.error.message.value || j.error.message)) || '';
+          } catch (e) { hint = (t || '').slice(0, 180); }
+          throw new Error('GET ' + r.status + (hint ? (' — ' + hint) : ''));
+        });
+      }
       return r.json();
     }).then(function(d){
       var rows = d.value || [];
@@ -1106,41 +1141,56 @@ function spGetAll(path){
   var abs = path.indexOf('http') === 0 ? path : (SP_URL + path);
   return page(abs);
 }
-function listItemsPath(cfg){
-  var p = "/_api/web/lists/getbytitle('" + cfg.title.replace(/'/g, "''") + "')/items?$top=5000";
-  var sel = cfg.select || '';
-  if (cfg.expand && cfg.expandSelect) {
-    sel = sel ? (sel + ',' + cfg.expandSelect) : cfg.expandSelect;
-    p += '&$expand=' + encodeURIComponent(cfg.expand);
+function listItemsPath(title){
+  return "/_api/web/lists/getbytitle('" + String(title).replace(/'/g, "''") + "')/items?$top=5000";
+}
+
+function applyMappedRows(key, rows){
+  if (!rows || !rows.length) {
+    useSeed(key, 'list returned 0 items (empty or wrong title)');
+    return false;
   }
-  if (sel) p += '&$select=' + encodeURIComponent(sel);
-  return p;
+  var map = MAPPERS[key];
+  var mapped = map ? rows.map(map) : rows;
+  var kept = mapped.filter(function(r){
+    if (key === 'register') return !!r.id;
+    if (key === 'steps') return !!r.sop;
+    if (key === 'edges') return !!(r.s && r.t);
+    return !!r.id;
+  });
+  if (!kept.length) {
+    console.warn('[QMS]', key, 'got', rows.length, 'SP row(s) but mapper kept 0 — sample keys:', Object.keys(rows[0] || {}));
+    useSeed(key, 'rows present but required fields not recognized (check internal names)');
+    return false;
+  }
+  CACHE[key] = kept;
+  DATA_SOURCE[key] = 'sp';
+  console.info('[QMS]', key, '← SharePoint (' + kept.length + ' rows)');
+  return true;
 }
 
 function loadListKey(key){
   var cfg = LIST_MAP[key];
-  if (!cfg || !SP_READY) { useSeed(key); return Promise.resolve(); }
-  return spGetAll(listItemsPath(cfg)).then(function(rows){
-    if (!rows || !rows.length) { useSeed(key); return; }
-    var map = MAPPERS[key];
-    CACHE[key] = map ? rows.map(map).filter(function(r){
-      if (key === 'register') return !!r.id;
-      if (key === 'steps') return !!r.sop;
-      if (key === 'edges') return !!(r.s && r.t);
-      return !!r.id;
-    }) : rows;
-    if (!CACHE[key].length) { useSeed(key); return; }
-    DATA_SOURCE[key] = 'sp';
+  if (!cfg || !SP_READY) { useSeed(key, 'SharePoint not ready'); return Promise.resolve(); }
+  var path = listItemsPath(cfg.title);
+  return spGetAll(path).then(function(rows){
+    applyMappedRows(key, rows);
   }).catch(function(err){
-    console.warn('[QMS] Falling back to seed for', key, err.message || err);
-    useSeed(key);
+    useSeed(key, (err && err.message) || String(err));
   });
 }
 
 function loadAllLists(){
   Object.keys(SEED).forEach(function(k){ if (!LIST_MAP[k]) useSeed(k); });
   var keys = Object.keys(LIST_MAP);
-  return Promise.all(keys.map(loadListKey)).then(function(){
+  /* Register first so steps/edges can resolve Lookup IDs → DocID */
+  return loadListKey('register').then(function(){
+    rebuildRegisterIndex();
+    var rest = keys.filter(function(k){ return k !== 'register'; });
+    return Promise.all(rest.map(loadListKey));
+  }).then(function(){
+    /* Re-map steps/edges if register arrived and lookups were Id-only */
+    rebuildRegisterIndex();
     enrichRegisterStepCounts();
     var fromSp = keys.filter(function(k){ return DATA_SOURCE[k] === 'sp'; });
     console.info('[QMS] Data sources:', DATA_SOURCE);
