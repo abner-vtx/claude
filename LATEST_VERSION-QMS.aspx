@@ -251,14 +251,15 @@ label{font-size:.875rem;font-weight:500;color:var(--label);}
 .form-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,114,178,.12);}
 textarea.form-input{resize:vertical;min-height:72px;}
 
-/* DCR multi-select (capsule picker) */
+/* DCR multi-select: chips live inside the input; menu closes on chip/outside click */
 .ms-field{position:relative;}
-.ms-input-wrap{border:1.5px solid var(--inputbd);border-radius:.5rem;background:#fff;padding:6px 8px;min-height:42px;}
+.ms-input-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border:1.5px solid var(--inputbd);border-radius:.5rem;background:#fff;padding:6px 8px;min-height:42px;}
 .ms-input-wrap:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,114,178,.12);}
-.ms-input-wrap input{border:none;outline:none;width:100%;padding:6px 4px;font:inherit;font-size:.875rem;background:transparent;}
-.ms-capsules{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:0;}
-.ms-capsule{display:inline-flex;align-items:center;gap:6px;background:var(--blue-bg);color:var(--blue);border:1px solid #BFDBFE;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;}
-.ms-capsule button{border:none;background:transparent;color:var(--blue);cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 2px;}
+.ms-input-wrap input{border:none;outline:none;flex:1;min-width:140px;padding:6px 4px;font:inherit;font-size:.875rem;background:transparent;}
+.ms-capsules{display:contents;}
+.ms-capsule{display:inline-flex;align-items:center;gap:6px;background:var(--blue-bg);color:var(--blue);border:none;border-radius:4px;padding:3px 8px;font-size:12px;font-weight:600;max-width:100%;}
+.ms-capsule .ms-cap-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px;}
+.ms-capsule button{border:none;background:transparent;color:var(--blue);cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 2px;flex-shrink:0;}
 .ms-capsule button:hover{color:#DC2626;}
 .ms-dropdown{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;z-index:30;display:none;}
 .ms-dropdown.show{display:block;}
@@ -266,6 +267,9 @@ textarea.form-input{resize:vertical;min-height:72px;}
 .ms-option:hover,.ms-option.active{background:var(--blue-bg);}
 .ms-option .mono{color:var(--muted);font-size:11px;margin-right:6px;}
 .ms-empty{padding:12px;color:var(--muted);font-size:12.5px;}
+/* Selected primary doc title - borderless readout (not another form control) */
+.dcr-doc-summary{margin-top:6px;font-size:13px;color:var(--label);line-height:1.4;}
+.dcr-doc-summary .mono{color:var(--blue);font-weight:700;margin-right:8px;}
 .editor-frame{width:100%;height:min(70vh,720px);border:1px solid var(--border);border-radius:8px;background:#fff;}
 .workspace-doc-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
 .workspace-doc-btn{text-align:left;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font:inherit;}
@@ -437,7 +441,7 @@ textarea.form-input{resize:vertical;min-height:72px;}
   <div id="s-audits"></div>
  </section>
 
- <!-- LAB COMPASS (hidden — future standalone app) -->
+ <!-- LAB COMPASS (hidden - future standalone app) -->
  <section id="v-compass" class="view" style="display:none">
   <div class="page-intro"><h2>Lab Compass</h2><p>Quick instructions for everyday lab work. Search for what you are doing today, or pick a common task, to see the exact procedure steps, forms, and responsible roles.</p></div>
   <div style="text-align:center;margin-bottom:26px">
@@ -464,13 +468,18 @@ textarea.form-input{resize:vertical;min-height:72px;}
     <select class="form-input" name="PrimaryDocId" id="dcrPrimaryDoc">
      <option value="">Select a controlled document&hellip;</option>
     </select>
+    <div class="dcr-doc-summary" id="dcrPrimarySummary" hidden></div>
     <input type="hidden" name="RequestTitle" id="dcrRequestTitle" value="">
    </div>
-   <div class="form-group span-2 ms-field" id="dcrAddlDocsField">
+   <div class="form-group span-2" id="dcrAddlDocsField">
     <label>Additional documents</label>
-    <div class="ms-input-wrap"><input type="text" id="dcrAddlSearch" placeholder="Search and select documents&hellip;" autocomplete="off"></div>
-    <div class="ms-dropdown" id="dcrAddlDropdown"></div>
-    <div class="ms-capsules" id="dcrAddlCapsules"></div>
+    <div class="ms-field">
+     <div class="ms-input-wrap" id="dcrAddlWrap">
+      <div class="ms-capsules" id="dcrAddlCapsules"></div>
+      <input type="text" id="dcrAddlSearch" placeholder="Search and select documents&hellip;" autocomplete="off">
+     </div>
+     <div class="ms-dropdown" id="dcrAddlDropdown"></div>
+    </div>
     <input type="hidden" name="AdditionalDocIds" id="dcrAddlDocIds" value="">
    </div>
    <div class="form-grid">
@@ -757,7 +766,7 @@ textarea.form-input{resize:vertical;min-height:72px;}
    Tries live REST reads against the site's lists (titles from Form Specs).
    If a list is missing, empty, or unreachable, falls back to the embedded
    seed JSON so local/testing use keeps working. Renderers always read the
-   UI-shaped rows via SP.items(name) — never SharePoint field names directly. */
+   UI-shaped rows via SP.items(name) - never SharePoint field names directly. */
 var SEED = JSON.parse(document.getElementById('lists').textContent);
 var CACHE = {};
 var DATA_SOURCE = {}; /* key -> 'sp' | 'seed' */
@@ -769,7 +778,7 @@ var dcrGrantedDocs = []; /* session demo of docs granted for workspace tab */
 
 /* Blob key -> SharePoint list title. Keys omitted here always stay on seed
    (clausemap/clausecols/activity/activity_tasks have no dedicated lists yet).
-   Prefer minimal $select (no lookup expands) — wrong field names cause GET 400.
+   Prefer minimal $select (no lookup expands) - wrong field names cause GET 400.
    On 400/404 we retry a bare /items query, then fall back to seed. */
 var LIST_MAP = {
   register:   { title: 'LS_QP1401r01_DocumentRegister' },
@@ -950,7 +959,7 @@ var MAPPERS = {
 function useSeed(key, reason){
   CACHE[key] = (SEED[key] || []).slice();
   DATA_SOURCE[key] = 'seed';
-  /* Only log string reasons — forEach(useSeed) used to pass the array index as reason. */
+  /* Only log string reasons - forEach(useSeed) used to pass the array index as reason. */
   if (typeof reason === 'string' && reason) console.warn('[QMS] Using seed for', key + ':', reason);
 }
 function enrichRegisterStepCounts(){
@@ -1149,7 +1158,7 @@ function loadCurrentUserInfo(){
 })();
 window.toggleMobileNav=function(){byId('tabsWrap').classList.toggle('nav-open');};
 
-/* ═══ SharePoint REST helpers (aligned with ReceivedSamples.aspx) ═══ */
+/* === SharePoint REST helpers (aligned with ReceivedSamples.aspx) === */
 function getRequestDigest() {
   return fetch(SP_URL + "/_api/contextinfo", {
     method: "POST",
@@ -1206,7 +1215,7 @@ function spGetAll(path){
             var j = JSON.parse(t);
             hint = (j.error && (j.error.message.value || j.error.message)) || '';
           } catch (e) { hint = (t || '').slice(0, 180); }
-          throw new Error('GET ' + r.status + (hint ? (' — ' + hint) : ''));
+          throw new Error('GET ' + r.status + (hint ? (' - ' + hint) : ''));
         });
       }
       return r.json();
@@ -1239,13 +1248,13 @@ function applyMappedRows(key, rows){
     return !!r.id;
   });
   if (!kept.length) {
-    console.warn('[QMS]', key, 'got', rows.length, 'SP row(s) but mapper kept 0 — sample keys:', Object.keys(rows[0] || {}));
+    console.warn('[QMS]', key, 'got', rows.length, 'SP row(s) but mapper kept 0 - sample keys:', Object.keys(rows[0] || {}));
     useSeed(key, 'rows present but required fields not recognized (check internal names)');
     return false;
   }
   CACHE[key] = kept;
   DATA_SOURCE[key] = 'sp';
-  console.info('[QMS]', key, '← SharePoint (' + kept.length + ' rows)');
+  console.info('[QMS]', key, '<- SharePoint (' + kept.length + ' rows)');
   return true;
 }
 
@@ -1270,7 +1279,7 @@ function probeSiteLists(){
       return /^LS_/i.test(t) || /^LS-/i.test(t) || /SOP/i.test(t) || /DocumentRegister|ProcessSteps|Relationship/i.test(t);
     }).map(function(L){ return { Title: L.Title, ItemCount: L.ItemCount }; });
     console.info('[QMS] Site URL:', SP_URL);
-    console.info('[QMS] QMS-related lists on this site (Title → ItemCount):', interesting);
+    console.info('[QMS] QMS-related lists on this site (Title -> ItemCount):', interesting);
     var expected = Object.keys(LIST_MAP).map(function(k){ return LIST_MAP[k].title; });
     var byTitle = {};
     rows.forEach(function(L){ byTitle[L.Title] = L.ItemCount; });
@@ -1289,7 +1298,7 @@ function loadAllLists(){
   Object.keys(SEED).forEach(function(k){ if (!LIST_MAP[k]) useSeed(k); });
   var keys = Object.keys(LIST_MAP);
   return probeSiteLists().then(function(){
-    /* Register first so steps/edges can resolve Lookup IDs → DocID */
+    /* Register first so steps/edges can resolve Lookup IDs -> DocID */
     return loadListKey('register');
   }).then(function(){
     rebuildRegisterIndex();
@@ -1303,7 +1312,7 @@ function loadAllLists(){
     if (SP_READY && fromSp.length) {
       showAlert('success', 'Loaded ' + fromSp.length + ' list(s) from SharePoint; others using seed data.');
     } else if (SP_READY) {
-      showAlert('info', 'SharePoint lists empty or unavailable — using embedded seed data.');
+      showAlert('info', 'SharePoint lists empty or unavailable - using embedded seed data.');
     }
   });
 }
@@ -1351,7 +1360,7 @@ window.saveComplaint = function(){
   var through = formVal('m-cmp', 'ReceivedThrough') || 'Email';
   if (!company || !desc) { showAlert('error', 'Company and Description are required.'); return; }
   var btn = byId('m-cmp').querySelector('.btn-primary');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   var today = todayStr();
   nextSequenceId({ prefix: 'CMP{YY}', pad: 3, listKey: 'complaints', field: 'RecordID' }).then(function(recordId){
     var uiRow = { id: recordId, c1: company, c2: category, st: 'New', stc: statusClass('New'), d: today };
@@ -1407,21 +1416,31 @@ window.saveComplaint = function(){
 function registerDocOptions(){
   return SP.items('register').slice().sort(function(a,b){ return String(a.id).localeCompare(String(b.id)); });
 }
-function docLabel(n){ return (n.id || '') + ' — ' + (n.title || ''); }
+function docLabel(n){ return (n.id || '') + ' - ' + (n.title || ''); }
+function updateDcrPrimarySummary(){
+  var sel = byId('dcrPrimaryDoc');
+  var summary = byId('dcrPrimarySummary');
+  var titleInput = byId('dcrRequestTitle');
+  if (!sel) return;
+  var n = registerDocOptions().find(function(x){ return x.id === sel.value; });
+  if (titleInput) titleInput.value = n ? docLabel(n) : '';
+  if (!summary) return;
+  if (!n) { summary.hidden = true; summary.innerHTML = ''; return; }
+  summary.hidden = false;
+  summary.innerHTML = '<span class="mono">'+esc(n.id)+'</span>'+esc(n.title || '');
+}
 function populateDcrDocPickers(){
   var sel = byId('dcrPrimaryDoc');
   if (!sel) return;
   var cur = sel.value;
   var opts = ['<option value="">Select a controlled document&hellip;</option>'];
   registerDocOptions().forEach(function(n){
-    opts.push('<option value="'+esc(n.id)+'">'+esc(docLabel(n))+'</option>');
+    opts.push('<option value="'+esc(n.id)+'">'+esc(n.id)+' - '+esc(n.title || '')+'</option>');
   });
   sel.innerHTML = opts.join('');
   if (cur) sel.value = cur;
-  sel.onchange = function(){
-    var n = registerDocOptions().find(function(x){ return x.id === sel.value; });
-    byId('dcrRequestTitle').value = n ? docLabel(n) : '';
-  };
+  sel.onchange = updateDcrPrimarySummary;
+  updateDcrPrimarySummary();
   bindDcrAddlPicker();
   renderDcrAddlCapsules();
 }
@@ -1435,6 +1454,10 @@ function resetDcrAddlDocs(){
   if (dd) { dd.classList.remove('show'); dd.innerHTML = ''; }
   renderDcrAddlCapsules();
 }
+function closeDcrAddlDropdown(){
+  var dd = byId('dcrAddlDropdown');
+  if (dd) dd.classList.remove('show');
+}
 function renderDcrAddlCapsules(){
   var wrap = byId('dcrAddlCapsules');
   var hidden = byId('dcrAddlDocIds');
@@ -1442,12 +1465,18 @@ function renderDcrAddlCapsules(){
   var reg = registerDocOptions();
   wrap.innerHTML = dcrSelectedAddl.map(function(id){
     var n = reg.find(function(x){ return x.id === id; }) || { id: id, title: '' };
-    return '<span class="ms-capsule" data-id="'+esc(id)+'"><span class="mono">'+esc(n.id)+'</span> '+esc(n.title||'')+' <button type="button" aria-label="Remove">&times;</button></span>';
+    return '<span class="ms-capsule" data-id="'+esc(id)+'"><span class="ms-cap-label"><span class="mono">'+esc(n.id)+'</span> '+esc(n.title||'')+'</span><button type="button" aria-label="Remove">&times;</button></span>';
   }).join('');
+  wrap.querySelectorAll('.ms-capsule').forEach(function(cap){
+    cap.addEventListener('mousedown', function(){ closeDcrAddlDropdown(); });
+  });
   wrap.querySelectorAll('button').forEach(function(btn){
-    btn.addEventListener('click', function(){
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
       var id = btn.parentElement.getAttribute('data-id');
       dcrSelectedAddl = dcrSelectedAddl.filter(function(x){ return x !== id; });
+      closeDcrAddlDropdown();
       renderDcrAddlCapsules();
     });
   });
@@ -1456,6 +1485,7 @@ function renderDcrAddlCapsules(){
 function bindDcrAddlPicker(){
   var input = byId('dcrAddlSearch');
   var dd = byId('dcrAddlDropdown');
+  var picker = dd ? dd.parentElement : null;
   if (!input || !dd || input._dcrBound) return;
   input._dcrBound = true;
   function primaryId(){ return (byId('dcrPrimaryDoc') || {}).value || ''; }
@@ -1485,7 +1515,9 @@ function bindDcrAddlPicker(){
           if (dcrSelectedAddl.indexOf(id) < 0) dcrSelectedAddl.push(id);
           input.value = '';
           renderDcrAddlCapsules();
+          /* Keep open for rapid multi-add while search stays focused. */
           renderDd();
+          input.focus();
         });
       });
     }
@@ -1494,15 +1526,15 @@ function bindDcrAddlPicker(){
   input.addEventListener('focus', renderDd);
   input.addEventListener('input', renderDd);
   input.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') { closeDcrAddlDropdown(); input.blur(); return; }
     if (e.key === 'Enter') {
       e.preventDefault();
       var first = dd.querySelector('.ms-option');
       if (first) first.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     }
   });
-  document.addEventListener('click', function(e){
-    var field = byId('dcrAddlDocsField');
-    if (field && !field.contains(e.target)) dd.classList.remove('show');
+  document.addEventListener('mousedown', function(e){
+    if (picker && !picker.contains(e.target)) closeDcrAddlDropdown();
   });
 }
 function renderDcrWorkspace(){
@@ -1548,7 +1580,7 @@ function openDcrDocInEditor(doc){
     frame.src = 'about:blank';
     if (empty) {
       empty.hidden = false;
-      empty.innerHTML = '<p style="margin:0 0 10px"><strong>'+esc(doc.id)+'</strong> — '+esc(doc.title||'')+'</p>'
+      empty.innerHTML = '<p style="margin:0 0 10px"><strong>'+esc(doc.id)+'</strong> - '+esc(doc.title||'')+'</p>'
         + '<p style="margin:0;color:var(--muted);font-size:13px;line-height:1.6">In-app editing will embed <em>Word for the web</em> against a draft DOCX in a SharePoint library (copy-on-grant). '
         + 'Fallback: work in the local DOCX and upload it to the DCR draft library, then submit for Lab Manager review.</p>';
     }
@@ -1569,7 +1601,7 @@ window.demoGrantDcrAccess = function(docIds, dueDays){
   if (dcrGrantedDocs.length) {
     switchTab('docs');
     switchSub('docs', 'dcr-workspace');
-    showAlert('success', 'Access granted' + (dueDays ? (' — due in ' + dueDays + ' day(s)') : '') + '. Workspace tab is now available.');
+    showAlert('success', 'Access granted' + (dueDays ? (' - due in ' + dueDays + ' day(s)') : '') + '. Workspace tab is now available.');
   }
 };
 
@@ -1584,7 +1616,7 @@ window.saveDcr = function(){
   if (!primaryId || !primary) { showAlert('error', 'Select a primary document from the register.'); return; }
   if (!rationale) { showAlert('error', 'Proposed Change & Rationale is required.'); return; }
   var btn = byId('m-dcr').querySelector('.btn-primary');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   var today = todayStr();
   var allDocs = [primaryId].concat(addl);
   nextSequenceId({ prefix: 'DCR-{YY}', pad: 3, listKey: 'dcr', field: 'DCRNumber' }).then(function(dcrNumber){
@@ -1607,10 +1639,11 @@ window.saveDcr = function(){
       clearForm('m-dcr');
       resetDcrAddlDocs();
       var sel = byId('dcrPrimaryDoc'); if (sel) sel.value = '';
+      updateDcrPrimarySummary();
       closeModal('m-dcr');
       showAlert(ok ? 'success' : 'info', msg);
     }
-    /* Email to Lab Manager is a separate Power Automate flow on list item created — app only writes the row. */
+    /* Email to Lab Manager is a separate Power Automate flow on list item created - app only writes the row. */
     if (!SP_READY) {
       finish(false, 'Saved locally (seed mode).');
       return;
@@ -1785,7 +1818,7 @@ function initApp(){
   renderAll();
   var site = resolveSiteUrl();
   if (!site) {
-    console.info('[QMS] No SharePoint context — seed-only mode.');
+    console.info('[QMS] No SharePoint context - seed-only mode.');
     return;
   }
   SP_URL = site;
