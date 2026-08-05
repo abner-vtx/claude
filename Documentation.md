@@ -1,6 +1,6 @@
 # Quality Management System Platform v5.2 (SharePoint Online)
 
-**Primary file:** `LATEST_VERSION-QMS.aspx`
+**Primary file:** `src/QMS_Platform.aspx`
 **System:** Quality Management System Platform v5.2 — ISO/IEC 17025:2017
 **Hosting:** SharePoint Online, intended for **SiteAssets** deployment (also works from Site Pages)
 **Companion docs:** `QMS_Platform_AppGuide_v01.md` (roadmap, build order), `QMS_Platform_Architecture_v01.md` (subsystem design), `Form_Specs/*.md` (per-list field specs, 14 files), `Form_Specs/PlatformValidation_DataIntegrity_v01.md` (validation/e-signature requirements), `Form_Specs/README_FormSpecs_Index.md` (index + data-flow map), `SharePoint_List_Schema_v01.md` (28-list creation reference)
@@ -45,7 +45,7 @@ Four top-level tabs (`data-tab`), matching the architecture's four subsystems:
 
 ## SharePoint lists used (REST)
 
-Hybrid reads via `LIST_MAP` in `LATEST_VERSION-QMS.aspx`. Empty/missing lists fall back to seed. List titles must match the Form Specs naming (underscores). If a title differs on the site, change it in `LIST_MAP` only.
+Hybrid reads via `LIST_MAP` in `src/QMS_Platform.aspx`. Empty/missing lists fall back to seed. List titles must match the Form Specs naming (underscores). If a title differs on the site, change it in `LIST_MAP` only.
 
 | Blob key                  | Target list                             | Subsystem / tab                           | Status                                                                |
 | ------------------------- | --------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------- |
