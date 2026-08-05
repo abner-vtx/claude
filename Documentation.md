@@ -1,6 +1,6 @@
 # Quality Management System Platform v5.2 (SharePoint Online)
 
-**Primary file:** `src/QMS_Platform.aspx`
+**Primary file:** `LATEST_VERSION-QMS.aspx`
 **System:** Quality Management System Platform v5.2 — ISO/IEC 17025:2017
 **Hosting:** SharePoint Online, intended for **SiteAssets** deployment (also works from Site Pages)
 **Companion docs:** `QMS_Platform_AppGuide_v01.md` (roadmap, build order), `QMS_Platform_Architecture_v01.md` (subsystem design), `Form_Specs/*.md` (per-list field specs, 14 files), `Form_Specs/PlatformValidation_DataIntegrity_v01.md` (validation/e-signature requirements), `Form_Specs/README_FormSpecs_Index.md` (index + data-flow map), `SharePoint_List_Schema_v01.md` (28-list creation reference)
@@ -11,7 +11,7 @@ This document is the operational documentation for the page: (1) a change log of
 
 ## Current build state
 
-The page is a **converted static prototype**, not a wired SharePoint app. It has the ASPX shell, page-load structure, and the site-URL/digest scaffolding a real SharePoint page needs, but every list it renders comes from one embedded JSON blob baked into the page (`<script id="lists" type="application/json">`), read through a mock data-access shim (`SP.items(name)`). There are **no live `_api/web/lists` reads, no writes, and no Power Automate integration** yet. `demoSave()`/`demoNew()` are still stubs that just show an info toast.
+The page has a **hybrid SharePoint data layer**. On load it resolves the site URL, fetches a request digest, and attempts REST reads for each mapped list (titles from the Form Specs / `SharePoint_List_Schema_v01.md`). If a list is missing, empty, or unreachable, that key falls back to the embedded seed JSON (`<script id="lists" type="application/json">`). Renderers still call `SP.items(name)` and never bind to SharePoint field names directly — mappers convert SP rows into the UI shape. **Complaints** and **DCR** saves write to SharePoint when available (with session/seed fallback on failure); other Ops modals still use `demoSave()`. No Power Automate integration yet.
 
 ---
 
@@ -45,37 +45,36 @@ Four top-level tabs (`data-tab`), matching the architecture's four subsystems:
 
 ## SharePoint lists used (REST)
 
-**None yet, live.** All data is read from the embedded JSON blob and the `SP.items(name)` shim (see Change 1). The table below maps each blob key to its **target** SharePoint list per the Form Specs, for when real wiring happens:
+Hybrid reads via `LIST_MAP` in `LATEST_VERSION-QMS.aspx`. Empty/missing lists fall back to seed. List titles must match the Form Specs naming (underscores). If a title differs on the site, change it in `LIST_MAP` only.
 
-| Blob key                  | Target list                             | Subsystem / tab                           | Status                                                     |
-| ------------------------- | --------------------------------------- | ----------------------------------------- | ---------------------------------------------------------- |
-| `register`                | `LS_QP1401r01_DocumentRegister`         | S2 Register, SOP Viewer, Network, Compass | Target defined                                             |
-| `steps`                   | `LS_SOPProcessSteps`                    | S2 SOP Viewer; feeds Compass search       | Target defined                                             |
-| `edges`                   | `LS_SOPRelationships`                   | S2 Relationships Network                  | Target defined                                             |
-| `clausemap`, `clausecols` | —                                       | S2 Clause-to-Clause Map                   | No dedicated list in the Form Specs yet — needs definition |
-| `complaints`              | `LS_QP1201r01_Complaints`               | S3 Complaints                             | Target defined; only tab with a real modal                 |
-| `ncw`                     | `LS_QP1301r01_NonconformingWork`        | S3 Nonconforming Work                     | Target defined; no form built                              |
-| `ca`                      | `LS_QP1601r01_CorrectiveActions`        | S3 Corrective Actions                     | Target defined; no form built                              |
-| `risks`                   | `LS_QP1501r01_ActionPlans`              | S3 Risks & Opportunities                  | Target defined; no form built                              |
-| `ofi`                     | `LS_QP1503r01_Improvement`              | S3 Improvement                            | Target defined; no form built                              |
-| `audits`                  | `LS_QP1701r01`–`LS_QP1704r01` (4 lists) | S3 Audits                                 | Target defined; UI still one flat table, not split         |
-| `dcr`                     | `LS_QP1402r01_ChangeRequests`           | S2 Change Requests                        | Target defined; has a real modal                           |
-| `activity`                | —                                       | S1 Dashboard recent-activity feed         | No dedicated list — presentational only                    |
-| `activity_tasks`          | —                                       | S4 Lab Compass task cards                 | No dedicated list — presentational only                    |
-| _(not in blob)_           | `LS_QP1801r01_ManagementReview`         | S1 Dashboard                              | Target defined; no tab/form exists in the UI               |
-
-If/when list titles differ from the Form Specs naming convention on the actual site, they'll need to be wired in as constants in `src/QMS_Platform.aspx` (no such constants exist yet — nothing calls a real list).
+| Blob key                  | Target list                             | Subsystem / tab                           | Status                                                                |
+| ------------------------- | --------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------- |
+| `register`                | `LS_QP1401r01_DocumentRegister`         | S2 Register, SOP Viewer, Network, Compass | Hybrid read + mapper                                                  |
+| `steps`                   | `LS_SOPProcessSteps`                    | S2 SOP Viewer; feeds Compass search       | Hybrid read + mapper (`$expand=SOPRef`)                               |
+| `edges`                   | `LS_SOPRelationships`                   | S2 Relationships Network                  | Hybrid read + mapper (`$expand=SourceSOP,TargetSOP`)                  |
+| `clausemap`, `clausecols` | —                                       | S2 Clause-to-Clause Map                   | Seed only — no dedicated list yet                                     |
+| `complaints`              | `LS_QP1201r01_Complaints`               | S3 Complaints                             | Hybrid read + **live create** (`saveComplaint`)                       |
+| `ncw`                     | `LS_QP1301r01_NonconformingWork`        | S3 Nonconforming Work                     | Hybrid read; save still stub                                          |
+| `ca`                      | `LS_QP1601r01_CorrectiveActions`        | S3 Corrective Actions                     | Hybrid read; save still stub                                          |
+| `risks`                   | `LS_QP1501r01_ActionPlans`              | S3 Risks & Opportunities                  | Hybrid read; save still stub                                          |
+| `ofi`                     | `LS_QP1503r01_Improvement`              | S3 Improvement                            | Hybrid read; save still stub                                          |
+| `audits`                  | `LS_QP1701r01_AuditNotification`        | S3 Audits                                 | Hybrid read (Notification list only); UI still one flat table         |
+| `dcr`                     | `LS_QP1402r01_ChangeRequests`           | S2 Change Requests                        | Hybrid read + **live create** (`saveDcr`)                             |
+| `activity`                | —                                       | S1 Dashboard recent-activity feed         | Seed only — presentational                                            |
+| `activity_tasks`          | —                                       | S4 Lab Compass task cards                 | Seed only — presentational                                            |
+| _(not in blob)_           | `LS_QP1801r01_ManagementReview`         | S1 Dashboard                              | Target defined; no tab/form exists in the UI                          |
 
 ---
 
 ## Data model notes (important behaviors)
 
-- **Mock data-access layer:** `LISTS = JSON.parse(document.getElementById('lists').textContent)` loads the whole embedded blob once at page load; `SP.items(name)` returns `(LISTS[name] || []).slice()`. The code comment at line 373 is explicit that this mirrors the shape of a real call (`GET _api/web/lists/getbytitle('<listTitle>')/items?$select=...`) so render logic contains no hardcoded data — the intent is that swapping this shim for real `fetch()` calls shouldn't require touching the render functions.
-- **No writes occur anywhere.** `demoSave(id)` (line 407) closes the modal and shows an info toast; `demoNew()` (line 408) shows an info toast. Neither touches SharePoint.
-- **Digest token scaffolded but unused.** `getRequestDigest()` (lines 424–432) POSTs to `/_api/contextinfo` and resolves `FormDigestValue` — the code comment (lines 421–423) is explicit this exists so the first real write (Complaints/DCR, per the App Guide's build order) doesn't also have to invent this. Nothing calls it yet.
-- **No auth or permission logic.** No role checks, no `associatedownergroup` lookups, no list-level permission gating — matches the App Guide's note that this is a client-side-only prototype today.
-- **No pagination/threshold handling.** All lists render in full on load; there's no `__next`/paging chase yet. This will matter once real data replaces the seed (e.g., the Audit Checklist alone seeds ~400 rows per audit per the App Guide).
-- **ID-numbering decision (confirmed, not yet implemented):** auto-numbered IDs (`RecordID`, `CARID`, `DCRNumber`, etc.) will be computed client-side by the app — query the current max sequence for the year/prefix, +1, written on save — rather than via a Power Automate flow. Nothing in the code does this yet; see `SharePoint_List_Schema_v01.md` §0.1b and the Form Specs for the full list of fields this affects.
+- **Hybrid data-access layer:** `SEED` is the embedded JSON blob; `CACHE` holds the active rows per key. `loadAllLists()` tries each `LIST_MAP` entry with `spGetAll` (follows `odata.nextLink`). Non-empty SP results are mapped into the UI shape and marked `DATA_SOURCE[key]='sp'`; otherwise the seed is used. `SP.items(name)` always returns from `CACHE`.
+- **Writes (Complaints + DCR):** `saveComplaint()` / `saveDcr()` mint client-side IDs (`CMP{YY}{###}`, `DCR-{YY}{###}`), POST via digest-backed `spPost`, then refresh the table. On missing SP context or POST failure, the row is kept in-session via seed fallback and an info toast explains why.
+- **Intake defaults on Complaint create:** the simple modal only collects Category / ReceivedThrough / Company / Description. Remaining schema-required evaluation fields are written as pending defaults (`IsValid=Yes`, rationale/NCW rationale `"Pending evaluation"`, etc.) so SharePoint Required columns do not block intake. Tighten once the full evaluation sections are wired.
+- **Digest + REST helpers:** `getRequestDigest`, `spGet`, `spPost`, `spGetAll` follow the `ReceivedSamples.aspx` pattern (`odata=nometadata`, `credentials:'include'`).
+- **Init gating:** prefers `_spBodyOnLoadFunctionNames` when present (SharePoint page lifecycle); otherwise `DOMContentLoaded`. No hard failure when opened outside SharePoint — seed mode continues.
+- **No auth or permission logic beyond header user display.** `PTS_Users` lookup still supplies position for the header only.
+- **ID numbering (partial):** implemented for Complaints and DCR creates; other record types still pending.
 
 ---
 
@@ -124,16 +123,28 @@ None implemented yet. The App Guide's target list (auto-numbering, "Raise CA/DCR
 
 **Not done in this change:** no functional/logic change anywhere — CSS and markup only, purely visual.
 
+### Change 4 — Hybrid SharePoint data layer + Complaints/DCR writes
+
+**Problem:** Lists exist on the tenant but the page only read the embedded seed blob. There was no way to pick up real data when lists are populated, and Complaints/DCR could not persist.
+
+**Fix:**
+
+- Replaced the mock `SP.items()` shim with a hybrid layer: `LIST_MAP` list titles, REST helpers (`spGet`/`spPost`/`spGetAll` + digest), per-key mappers, and seed fallback when a list is empty/missing/unreachable.
+- Init now follows the ReceivedSamples pattern (`_spBodyOnLoadFunctionNames` when available), then loads lists and re-renders.
+- Wired `saveComplaint()` and `saveDcr()` with client-side ID generation and SharePoint POST; session/seed fallback if SP is unavailable or the write fails.
+- Added `name` attributes on Complaint and DCR modal fields so saves can read the form.
+
+**Not done in this change:** writes for NCW/CA/Risks/OFI/Audits; Management Review UI; full evaluation-section field capture on Complaint; Power Automate; permissions.
+
 ---
 
 ## Current state summary
 
-- **SharePoint connectivity:** none live — site-URL resolution and digest-fetch are scaffolded but unused.
-- **Data source:** one embedded JSON blob (14 keys), read through a mock `SP.items()` shim designed to be swappable for real REST calls without touching render logic.
-- **Working data-entry forms:** 2 of 12 target lists (Complaints, DCR) — both still write-stubbed via `demoSave()`.
-- **Table shells with no form:** Nonconforming Work, Corrective Actions, Risks & Opportunities, Improvement, Audits (5 of 12).
+- **SharePoint connectivity:** hybrid — live REST reads when lists have data; seed JSON otherwise. Digest-backed writes for Complaints and DCR.
+- **Data source:** `LIST_MAP` → SharePoint, else embedded JSON (14 keys), always via `SP.items()` UI shape.
+- **Working data-entry forms with persistence:** Complaints + DCR (SP when available, else session seed).
+- **Forms still stub-saved:** NCW, CA, Risks, OFI, Audits.
 - **Missing entirely from the UI:** Management Review (1 of 12).
-- **Read-mostly / working as designed:** Document Register, SOP Viewer, Relationships Network, Clause-to-Clause Map, Lab Compass — all render from seed data with no SharePoint dependency to add beyond swapping the data source.
-- **No auth, no permissions, no Power Automate, no pagination.**
-- **No on-page version display** (Change 2) — the app itself shows no version string; **v5.2** is tracked here, in this document's header, not in the UI.
-- **Visual style pass complete** (Change 3) — header, tables, card borders/shadow, and section typography updated. Functional wiring (SharePoint lists, forms, auth) is unchanged.
+- **Read-mostly:** Document Register, SOP Viewer, Relationships Network, Clause-to-Clause Map, Lab Compass — hybrid-ready.
+- **No list-level permissions gating, no Power Automate.** Pagination chase exists for reads (`odata.nextLink`).
+- **No on-page version display** (Change 2) — **v5.2** is tracked here, not in the UI.
