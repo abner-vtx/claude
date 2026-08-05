@@ -898,7 +898,8 @@ var MAPPERS = {
 function useSeed(key, reason){
   CACHE[key] = (SEED[key] || []).slice();
   DATA_SOURCE[key] = 'seed';
-  if (reason) console.warn('[QMS] Using seed for', key + ':', reason);
+  /* Only log string reasons — forEach(useSeed) used to pass the array index as reason. */
+  if (typeof reason === 'string' && reason) console.warn('[QMS] Using seed for', key + ':', reason);
 }
 function enrichRegisterStepCounts(){
   var steps = CACHE.steps || [];
@@ -1180,16 +1181,42 @@ function loadListKey(key){
   });
 }
 
+function probeSiteLists(){
+  /* Helps diagnose empty-vs-wrong-title: log Title + ItemCount for QMS-looking lists on this site. */
+  var path = "/_api/web/lists?$select=Title,ItemCount,Hidden&$filter=Hidden eq false&$top=200";
+  return spGet(path).then(function(d){
+    var rows = d.value || [];
+    var interesting = rows.filter(function(L){
+      var t = L.Title || '';
+      return /^LS_/i.test(t) || /^LS-/i.test(t) || /SOP/i.test(t) || /DocumentRegister|ProcessSteps|Relationship/i.test(t);
+    }).map(function(L){ return { Title: L.Title, ItemCount: L.ItemCount }; });
+    console.info('[QMS] Site URL:', SP_URL);
+    console.info('[QMS] QMS-related lists on this site (Title → ItemCount):', interesting);
+    var expected = Object.keys(LIST_MAP).map(function(k){ return LIST_MAP[k].title; });
+    var byTitle = {};
+    rows.forEach(function(L){ byTitle[L.Title] = L.ItemCount; });
+    expected.forEach(function(title){
+      if (byTitle[title] == null) console.warn('[QMS] Expected list not found on this site:', title);
+      else if (byTitle[title] === 0) console.warn('[QMS] Expected list exists but ItemCount=0:', title);
+      else console.info('[QMS] Expected list OK:', title, '(' + byTitle[title] + ' items)');
+    });
+    return interesting;
+  }).catch(function(err){
+    console.warn('[QMS] Could not probe site lists:', err.message || err);
+  });
+}
+
 function loadAllLists(){
   Object.keys(SEED).forEach(function(k){ if (!LIST_MAP[k]) useSeed(k); });
   var keys = Object.keys(LIST_MAP);
-  /* Register first so steps/edges can resolve Lookup IDs → DocID */
-  return loadListKey('register').then(function(){
+  return probeSiteLists().then(function(){
+    /* Register first so steps/edges can resolve Lookup IDs → DocID */
+    return loadListKey('register');
+  }).then(function(){
     rebuildRegisterIndex();
     var rest = keys.filter(function(k){ return k !== 'register'; });
     return Promise.all(rest.map(loadListKey));
   }).then(function(){
-    /* Re-map steps/edges if register arrived and lookups were Id-only */
     rebuildRegisterIndex();
     enrichRegisterStepCounts();
     var fromSp = keys.filter(function(k){ return DATA_SOURCE[k] === 'sp'; });
@@ -1497,7 +1524,7 @@ function renderAll(){
 function initApp(){
   if (window._qmsInitialized) return;
   window._qmsInitialized = true;
-  Object.keys(SEED).forEach(useSeed);
+  Object.keys(SEED).forEach(function(k){ useSeed(k); });
   renderAll();
   var site = resolveSiteUrl();
   if (!site) {
@@ -1517,7 +1544,7 @@ function initApp(){
   }).catch(function(err){
     console.warn('[QMS] SharePoint init failed; staying on seed data.', err.message || err);
     SP_READY = false;
-    Object.keys(SEED).forEach(useSeed);
+    Object.keys(SEED).forEach(function(k){ useSeed(k); });
     renderAll();
   });
 }
