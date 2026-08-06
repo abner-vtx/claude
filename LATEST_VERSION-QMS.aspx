@@ -251,6 +251,31 @@ label{font-size:.875rem;font-weight:500;color:var(--label);}
 .form-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,114,178,.12);}
 textarea.form-input{resize:vertical;min-height:72px;}
 
+/* DCR multi-select: chips live inside the input; menu closes on chip/outside click */
+.ms-field{position:relative;}
+.ms-input-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border:1.5px solid var(--inputbd);border-radius:.5rem;background:#fff;padding:6px 8px;min-height:42px;}
+.ms-input-wrap:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,114,178,.12);}
+.ms-input-wrap input{border:none;outline:none;flex:1;min-width:140px;padding:6px 4px;font:inherit;font-size:.875rem;background:transparent;}
+.ms-capsules{display:contents;}
+.ms-capsule{display:inline-flex;align-items:center;gap:6px;background:var(--blue-bg);color:var(--blue);border:none;border-radius:4px;padding:3px 8px;font-size:12px;font-weight:600;max-width:100%;}
+.ms-capsule .ms-cap-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px;}
+.ms-capsule button{border:none;background:transparent;color:var(--blue);cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 2px;flex-shrink:0;}
+.ms-capsule button:hover{color:#DC2626;}
+.ms-dropdown{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.12);max-height:220px;overflow-y:auto;z-index:30;display:none;}
+.ms-dropdown.show{display:block;}
+.ms-option{padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #F1F5F9;}
+.ms-option:hover,.ms-option.active{background:var(--blue-bg);}
+.ms-option .mono{color:var(--muted);font-size:11px;margin-right:6px;}
+.ms-empty{padding:12px;color:var(--muted);font-size:12.5px;}
+/* Selected primary doc title - borderless readout (not another form control) */
+.dcr-doc-summary{margin-top:6px;font-size:13px;color:var(--label);line-height:1.4;}
+.dcr-doc-summary .mono{color:var(--blue);font-weight:700;margin-right:8px;}
+.editor-frame{width:100%;height:min(70vh,720px);border:1px solid var(--border);border-radius:8px;background:#fff;}
+.workspace-doc-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.workspace-doc-btn{text-align:left;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font:inherit;}
+.workspace-doc-btn:hover,.workspace-doc-btn.active{border-color:var(--blue);background:var(--blue-bg);}
+.subnav button.dcr-workspace-tab[hidden]{display:none!important;}
+
 .sp-footer{text-align:right;padding:16px 24px;font-size:11px;color:#A19F9D;}
 @media(max-width:900px){.grid-2,.grid-3,.two-panel{grid-template-columns:1fr;}.form-grid{grid-template-columns:1fr;}}
 @media(max-width:640px){.metrics-row-3{grid-template-columns:1fr;}.metrics-row-4{grid-template-columns:1fr 1fr;}}
@@ -330,6 +355,7 @@ textarea.form-input{resize:vertical;min-height:72px;}
    <button data-sub="network">Relationships Network</button>
    <button data-sub="clause">Clause-to-Clause Map</button>
    <button data-sub="dcr">Change Requests</button>
+   <button data-sub="dcr-workspace" class="dcr-workspace-tab" id="btnDcrWorkspace" hidden>My Document Edits</button>
   </div>
   <div id="s-register" class="subview active">
    <div class="card"><div class="card-hd"><h3>Master List of Documents</h3><span class="mono" style="color:var(--muted)" id="regCount"></span></div>
@@ -359,6 +385,22 @@ textarea.form-input{resize:vertical;min-height:72px;}
   <div id="s-dcr" class="subview">
    <div class="card"><div class="card-hd"><h3>Document Change Requests</h3><button class="btn btn-primary btn-sm" onclick="openModal('m-dcr')"><svg width="14" height="14"><use href="#icon-plus-outline"/></svg> New Request</button></div>
     <div class="card-bd"><table><thead><tr><th>DCR #</th><th>Title</th><th>Type</th><th>Driver</th><th>Stage</th><th>Requested</th></tr></thead><tbody id="dcrBody"></tbody></table></div>
+   </div>
+  </div>
+  <div id="s-dcr-workspace" class="subview">
+   <div class="page-intro" style="padding:0 0 16px"><h2 style="font-size:1.25rem;margin:0 0 6px">My Document Edits</h2><p style="margin:0;color:var(--muted);font-size:13px">Documents you were granted access to edit for an open change request. Edits save as drafts in the DCR library until the Lab Manager accepts them.</p></div>
+   <div class="two-panel">
+    <div class="list-panel">
+     <div class="workspace-doc-list" id="dcrWorkspaceDocs"></div>
+     <div class="info-box blue" style="margin:0"><strong>Fallback</strong>If in-app editing is unavailable, upload/replace the DOCX in the draft library and notify the Lab Manager.</div>
+    </div>
+    <div class="detail-panel">
+     <div id="dcrEditorEmpty" style="color:var(--muted);text-align:center;padding:44px 10px">Select a granted document to open it here (Word for the web).</div>
+     <iframe id="dcrEditorFrame" class="editor-frame" hidden title="Document editor"></iframe>
+     <div id="dcrEditorActions" hidden style="margin-top:12px;display:flex;gap:10px;justify-content:flex-end">
+      <button type="button" class="btn btn-outline" onclick="submitDcrDraftChanges()">Submit changes for review</button>
+     </div>
+    </div>
    </div>
   </div>
  </section>
@@ -399,7 +441,7 @@ textarea.form-input{resize:vertical;min-height:72px;}
   <div id="s-audits"></div>
  </section>
 
- <!-- LAB COMPASS (hidden — future standalone app) -->
+ <!-- LAB COMPASS (hidden - future standalone app) -->
  <section id="v-compass" class="view" style="display:none">
   <div class="page-intro"><h2>Lab Compass</h2><p>Quick instructions for everyday lab work. Search for what you are doing today, or pick a common task, to see the exact procedure steps, forms, and responsible roles.</p></div>
   <div style="text-align:center;margin-bottom:26px">
@@ -422,13 +464,30 @@ textarea.form-input{resize:vertical;min-height:72px;}
   <div class="modal-header"><div><h2>New Document Change Request</h2><p>LS_QP1402r01 &middot; QP-14</p></div><button class="modal-close" onclick="closeModal('m-dcr')">&times;</button></div>
   <div class="modal-body">
    <div class="section-title">Requester</div>
-   <div class="form-group span-2"><label>Document / Request Title <span class="req">*</span></label><input class="form-input" name="RequestTitle" placeholder="e.g. Revise PM-04 to add PT enrollment deadline"></div>
+   <div class="form-group span-2"><label>Primary document <span class="req">*</span></label>
+    <select class="form-input" name="PrimaryDocId" id="dcrPrimaryDoc">
+     <option value="">Select a controlled document&hellip;</option>
+    </select>
+    <div class="dcr-doc-summary" id="dcrPrimarySummary" hidden></div>
+    <input type="hidden" name="RequestTitle" id="dcrRequestTitle" value="">
+   </div>
+   <div class="form-group span-2" id="dcrAddlDocsField">
+    <label>Additional documents</label>
+    <div class="ms-field">
+     <div class="ms-input-wrap" id="dcrAddlWrap">
+      <div class="ms-capsules" id="dcrAddlCapsules"></div>
+      <input type="text" id="dcrAddlSearch" placeholder="Search and select documents&hellip;" autocomplete="off">
+     </div>
+     <div class="ms-dropdown" id="dcrAddlDropdown"></div>
+    </div>
+    <input type="hidden" name="AdditionalDocIds" id="dcrAddlDocIds" value="">
+   </div>
    <div class="form-grid">
     <div class="form-group"><label>Type of Request <span class="req">*</span></label><select class="form-input" name="RequestType"><option>New Document</option><option selected>Revision</option><option>Withdrawal</option></select></div>
-    <div class="form-group"><label>Change Driver <span class="req">*</span></label><select class="form-input" name="ChangeDriver"><option>Improvement</option><option selected>Preventive Action</option><option>Nonconforming Work</option><option>Other</option></select></div>
+    <div class="form-group"><label>Change Driver <span class="req">*</span></label><select class="form-input" name="ChangeDriver"><option>Improvement</option><option selected value="Scheduled Revision">Scheduled Revision</option><option>Nonconforming Work</option><option>Other</option></select></div>
    </div>
    <div class="form-group span-2"><label>Proposed Change &amp; Rationale <span class="req">*</span></label><textarea class="form-input" name="ProposedChangeRationale" placeholder="Describe the change and why it is needed"></textarea></div>
-   <div class="info-box amber"><strong>Two-stage approval</strong>Technical review then Quality Assurance approval, followed by the issuing checklist and implementation/training record.</div>
+   <div class="info-box amber" id="dcrTwoStageAlert"><strong>Two-stage approval</strong>Technical review then Quality Assurance approval, followed by the issuing checklist and implementation/training record.</div>
   </div>
   <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('m-dcr')">Cancel</button><button class="btn btn-primary" onclick="saveDcr()">Submit Request</button></div>
  </div>
@@ -707,17 +766,19 @@ textarea.form-input{resize:vertical;min-height:72px;}
    Tries live REST reads against the site's lists (titles from Form Specs).
    If a list is missing, empty, or unreachable, falls back to the embedded
    seed JSON so local/testing use keeps working. Renderers always read the
-   UI-shaped rows via SP.items(name) — never SharePoint field names directly. */
+   UI-shaped rows via SP.items(name) - never SharePoint field names directly. */
 var SEED = JSON.parse(document.getElementById('lists').textContent);
 var CACHE = {};
 var DATA_SOURCE = {}; /* key -> 'sp' | 'seed' */
 var SP_URL = '';
 var SP_READY = false;
-var currentUser = { id: null, name: '', position: '' };
+var currentUser = { id: null, name: '', position: '', isOwner: false };
+var dcrSelectedAddl = []; /* DocIDs for additional-docs multi-select */
+var dcrGrantedDocs = []; /* session demo of docs granted for workspace tab */
 
 /* Blob key -> SharePoint list title. Keys omitted here always stay on seed
    (clausemap/clausecols/activity/activity_tasks have no dedicated lists yet).
-   Prefer minimal $select (no lookup expands) — wrong field names cause GET 400.
+   Prefer minimal $select (no lookup expands) - wrong field names cause GET 400.
    On 400/404 we retry a bare /items query, then fall back to seed. */
 var LIST_MAP = {
   register:   { title: 'LS_QP1401r01_DocumentRegister' },
@@ -898,7 +959,7 @@ var MAPPERS = {
 function useSeed(key, reason){
   CACHE[key] = (SEED[key] || []).slice();
   DATA_SOURCE[key] = 'seed';
-  /* Only log string reasons — forEach(useSeed) used to pass the array index as reason. */
+  /* Only log string reasons - forEach(useSeed) used to pass the array index as reason. */
   if (typeof reason === 'string' && reason) console.warn('[QMS] Using seed for', key + ':', reason);
 }
 function enrichRegisterStepCounts(){
@@ -958,13 +1019,20 @@ function switchTab(tab){
 }
 function switchSub(group,sub){
  byId(group+'Nav').querySelectorAll('button').forEach(function(b){b.classList.toggle('active',b.dataset.sub===sub);});
- var views={docs:['register','viewer','network','clause','dcr']}[group];
+ var views={docs:['register','viewer','network','clause','dcr','dcr-workspace']}[group];
  views.forEach(function(s){byId('s-'+s).classList.toggle('active',s===sub);});
  if(sub==='network')setTimeout(drawNetwork,30);
+ if(sub==='dcr-workspace') renderDcrWorkspace();
 }
 window.go=function(tab,sub){switchTab(tab);if(sub)switchSub(tab,sub);};
-window.openModal=function(id){byId(id).classList.add('open');};
-window.closeModal=function(id){byId(id).classList.remove('open');};
+window.openModal=function(id){
+  if (id === 'm-dcr') { populateDcrDocPickers(); updateDcrRoleUi(); }
+  byId(id).classList.add('open');
+};
+window.closeModal=function(id){
+  byId(id).classList.remove('open');
+  if (id === 'm-dcr') resetDcrAddlDocs();
+};
 window.demoSave=function(id){closeModal(id);showAlert('info','Prototype: the built page saves this to the SharePoint list and routes approvals via Power Automate.');};
 window.demoNew=function(){showAlert('info','Prototype: opens the record form for this process (built from its list specification).');};
 
@@ -1038,15 +1106,35 @@ function setUserDisplay(name, role){
   ["hdrAvatar","navAvatar"].forEach(function(id){ var el=byId(id); if(el) el.textContent = initials; });
 }
 
+function updateDcrRoleUi(){
+  /* Lab Manager gate = SharePoint site owners (associatedownergroup). */
+  var alert = byId('dcrTwoStageAlert');
+  if (alert) alert.style.display = currentUser.isOwner ? 'none' : '';
+  /* Workspace tab stays hidden until a grant exists (demo: dcrGrantedDocs). */
+  var btn = byId('btnDcrWorkspace');
+  if (btn) btn.hidden = !(dcrGrantedDocs && dcrGrantedDocs.length);
+}
+function checkSiteOwner(){
+  var base = SP_URL || resolveSiteUrl();
+  if (!base) return Promise.resolve(false);
+  return fetch(base + '/_api/web/associatedownergroup/containsCurrentUser', {
+    headers: { 'Accept': 'application/json;odata=nometadata' },
+    credentials: 'include'
+  }).then(function(r){ if(!r.ok) throw new Error('owner '+r.status); return r.json(); })
+  .then(function(d){ return d.value === true; })
+  .catch(function(){ return false; });
+}
 function loadCurrentUserInfo(){
   return getCurrentUserInfo().then(function(cu){
     if (!cu || !cu.id) return null;
     currentUser.id = cu.id;
     currentUser.name = cu.name || '';
     setUserDisplay(cu.name, "");
-    return getUserPosition(cu.id).then(function(pos){
-      currentUser.position = pos || '';
-      setUserDisplay(cu.name, pos);
+    return Promise.all([getUserPosition(cu.id), checkSiteOwner()]).then(function(pair){
+      currentUser.position = pair[0] || '';
+      currentUser.isOwner = !!pair[1];
+      setUserDisplay(cu.name, currentUser.position);
+      updateDcrRoleUi();
       return currentUser;
     });
   });
@@ -1070,7 +1158,7 @@ function loadCurrentUserInfo(){
 })();
 window.toggleMobileNav=function(){byId('tabsWrap').classList.toggle('nav-open');};
 
-/* ═══ SharePoint REST helpers (aligned with ReceivedSamples.aspx) ═══ */
+/* === SharePoint REST helpers (aligned with ReceivedSamples.aspx) === */
 function getRequestDigest() {
   return fetch(SP_URL + "/_api/contextinfo", {
     method: "POST",
@@ -1127,7 +1215,7 @@ function spGetAll(path){
             var j = JSON.parse(t);
             hint = (j.error && (j.error.message.value || j.error.message)) || '';
           } catch (e) { hint = (t || '').slice(0, 180); }
-          throw new Error('GET ' + r.status + (hint ? (' — ' + hint) : ''));
+          throw new Error('GET ' + r.status + (hint ? (' - ' + hint) : ''));
         });
       }
       return r.json();
@@ -1160,13 +1248,13 @@ function applyMappedRows(key, rows){
     return !!r.id;
   });
   if (!kept.length) {
-    console.warn('[QMS]', key, 'got', rows.length, 'SP row(s) but mapper kept 0 — sample keys:', Object.keys(rows[0] || {}));
+    console.warn('[QMS]', key, 'got', rows.length, 'SP row(s) but mapper kept 0 - sample keys:', Object.keys(rows[0] || {}));
     useSeed(key, 'rows present but required fields not recognized (check internal names)');
     return false;
   }
   CACHE[key] = kept;
   DATA_SOURCE[key] = 'sp';
-  console.info('[QMS]', key, '← SharePoint (' + kept.length + ' rows)');
+  console.info('[QMS]', key, '<- SharePoint (' + kept.length + ' rows)');
   return true;
 }
 
@@ -1191,7 +1279,7 @@ function probeSiteLists(){
       return /^LS_/i.test(t) || /^LS-/i.test(t) || /SOP/i.test(t) || /DocumentRegister|ProcessSteps|Relationship/i.test(t);
     }).map(function(L){ return { Title: L.Title, ItemCount: L.ItemCount }; });
     console.info('[QMS] Site URL:', SP_URL);
-    console.info('[QMS] QMS-related lists on this site (Title → ItemCount):', interesting);
+    console.info('[QMS] QMS-related lists on this site (Title -> ItemCount):', interesting);
     var expected = Object.keys(LIST_MAP).map(function(k){ return LIST_MAP[k].title; });
     var byTitle = {};
     rows.forEach(function(L){ byTitle[L.Title] = L.ItemCount; });
@@ -1210,7 +1298,7 @@ function loadAllLists(){
   Object.keys(SEED).forEach(function(k){ if (!LIST_MAP[k]) useSeed(k); });
   var keys = Object.keys(LIST_MAP);
   return probeSiteLists().then(function(){
-    /* Register first so steps/edges can resolve Lookup IDs → DocID */
+    /* Register first so steps/edges can resolve Lookup IDs -> DocID */
     return loadListKey('register');
   }).then(function(){
     rebuildRegisterIndex();
@@ -1224,7 +1312,7 @@ function loadAllLists(){
     if (SP_READY && fromSp.length) {
       showAlert('success', 'Loaded ' + fromSp.length + ' list(s) from SharePoint; others using seed data.');
     } else if (SP_READY) {
-      showAlert('info', 'SharePoint lists empty or unavailable — using embedded seed data.');
+      showAlert('info', 'SharePoint lists empty or unavailable - using embedded seed data.');
     }
   });
 }
@@ -1272,7 +1360,7 @@ window.saveComplaint = function(){
   var through = formVal('m-cmp', 'ReceivedThrough') || 'Email';
   if (!company || !desc) { showAlert('error', 'Company and Description are required.'); return; }
   var btn = byId('m-cmp').querySelector('.btn-primary');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   var today = todayStr();
   nextSequenceId({ prefix: 'CMP{YY}', pad: 3, listKey: 'complaints', field: 'RecordID' }).then(function(recordId){
     var uiRow = { id: recordId, c1: company, c2: category, st: 'New', stc: statusClass('New'), d: today };
@@ -1325,17 +1413,214 @@ window.saveComplaint = function(){
   });
 };
 
+function registerDocOptions(){
+  return SP.items('register').slice().sort(function(a,b){ return String(a.id).localeCompare(String(b.id)); });
+}
+function docLabel(n){ return (n.id || '') + ' - ' + (n.title || ''); }
+function updateDcrPrimarySummary(){
+  var sel = byId('dcrPrimaryDoc');
+  var summary = byId('dcrPrimarySummary');
+  var titleInput = byId('dcrRequestTitle');
+  if (!sel) return;
+  var n = registerDocOptions().find(function(x){ return x.id === sel.value; });
+  if (titleInput) titleInput.value = n ? docLabel(n) : '';
+  if (!summary) return;
+  if (!n) { summary.hidden = true; summary.innerHTML = ''; return; }
+  summary.hidden = false;
+  summary.innerHTML = '<span class="mono">'+esc(n.id)+'</span>'+esc(n.title || '');
+}
+function populateDcrDocPickers(){
+  var sel = byId('dcrPrimaryDoc');
+  if (!sel) return;
+  var cur = sel.value;
+  var opts = ['<option value="">Select a controlled document&hellip;</option>'];
+  registerDocOptions().forEach(function(n){
+    opts.push('<option value="'+esc(n.id)+'">'+esc(n.id)+' - '+esc(n.title || '')+'</option>');
+  });
+  sel.innerHTML = opts.join('');
+  if (cur) sel.value = cur;
+  sel.onchange = updateDcrPrimarySummary;
+  updateDcrPrimarySummary();
+  bindDcrAddlPicker();
+  renderDcrAddlCapsules();
+}
+function resetDcrAddlDocs(){
+  dcrSelectedAddl = [];
+  var search = byId('dcrAddlSearch');
+  var hidden = byId('dcrAddlDocIds');
+  var dd = byId('dcrAddlDropdown');
+  if (search) search.value = '';
+  if (hidden) hidden.value = '';
+  if (dd) { dd.classList.remove('show'); dd.innerHTML = ''; }
+  renderDcrAddlCapsules();
+}
+function closeDcrAddlDropdown(){
+  var dd = byId('dcrAddlDropdown');
+  if (dd) dd.classList.remove('show');
+}
+function renderDcrAddlCapsules(){
+  var wrap = byId('dcrAddlCapsules');
+  var hidden = byId('dcrAddlDocIds');
+  if (!wrap) return;
+  var reg = registerDocOptions();
+  wrap.innerHTML = dcrSelectedAddl.map(function(id){
+    var n = reg.find(function(x){ return x.id === id; }) || { id: id, title: '' };
+    return '<span class="ms-capsule" data-id="'+esc(id)+'"><span class="ms-cap-label"><span class="mono">'+esc(n.id)+'</span> '+esc(n.title||'')+'</span><button type="button" aria-label="Remove">&times;</button></span>';
+  }).join('');
+  wrap.querySelectorAll('.ms-capsule').forEach(function(cap){
+    cap.addEventListener('mousedown', function(){ closeDcrAddlDropdown(); });
+  });
+  wrap.querySelectorAll('button').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      var id = btn.parentElement.getAttribute('data-id');
+      dcrSelectedAddl = dcrSelectedAddl.filter(function(x){ return x !== id; });
+      closeDcrAddlDropdown();
+      renderDcrAddlCapsules();
+    });
+  });
+  if (hidden) hidden.value = dcrSelectedAddl.join(';');
+}
+function bindDcrAddlPicker(){
+  var input = byId('dcrAddlSearch');
+  var dd = byId('dcrAddlDropdown');
+  var picker = dd ? dd.parentElement : null;
+  if (!input || !dd || input._dcrBound) return;
+  input._dcrBound = true;
+  function primaryId(){ return (byId('dcrPrimaryDoc') || {}).value || ''; }
+  function available(){
+    var taken = {};
+    dcrSelectedAddl.forEach(function(id){ taken[id] = true; });
+    if (primaryId()) taken[primaryId()] = true;
+    var q = String(input.value || '').toLowerCase().trim();
+    return registerDocOptions().filter(function(n){
+      if (taken[n.id]) return false;
+      if (!q) return true;
+      return (n.id + ' ' + n.title).toLowerCase().indexOf(q) >= 0;
+    }).slice(0, 12);
+  }
+  function renderDd(){
+    var rows = available();
+    if (!rows.length) {
+      dd.innerHTML = '<div class="ms-empty">No matching documents</div>';
+    } else {
+      dd.innerHTML = rows.map(function(n){
+        return '<div class="ms-option" data-id="'+esc(n.id)+'"><span class="mono">'+esc(n.id)+'</span>'+esc(n.title||'')+'</div>';
+      }).join('');
+      dd.querySelectorAll('.ms-option').forEach(function(opt){
+        opt.addEventListener('mousedown', function(e){
+          e.preventDefault();
+          var id = opt.getAttribute('data-id');
+          if (dcrSelectedAddl.indexOf(id) < 0) dcrSelectedAddl.push(id);
+          input.value = '';
+          renderDcrAddlCapsules();
+          /* Keep open for rapid multi-add while search stays focused. */
+          renderDd();
+          input.focus();
+        });
+      });
+    }
+    dd.classList.add('show');
+  }
+  input.addEventListener('focus', renderDd);
+  input.addEventListener('input', renderDd);
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') { closeDcrAddlDropdown(); input.blur(); return; }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      var first = dd.querySelector('.ms-option');
+      if (first) first.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    }
+  });
+  document.addEventListener('mousedown', function(e){
+    if (picker && !picker.contains(e.target)) closeDcrAddlDropdown();
+  });
+}
+function renderDcrWorkspace(){
+  var list = byId('dcrWorkspaceDocs');
+  var empty = byId('dcrEditorEmpty');
+  var frame = byId('dcrEditorFrame');
+  var actions = byId('dcrEditorActions');
+  if (!list) return;
+  updateDcrRoleUi();
+  if (!dcrGrantedDocs.length) {
+    list.innerHTML = '<div class="ms-empty">No granted documents yet. After the Lab Manager grants access, they appear here.</div>';
+    if (empty) empty.hidden = false;
+    if (frame) { frame.hidden = true; frame.src = 'about:blank'; }
+    if (actions) actions.hidden = true;
+    return;
+  }
+  list.innerHTML = dcrGrantedDocs.map(function(d, i){
+    return '<button type="button" class="workspace-doc-btn'+(i===0?' active':'')+'" data-i="'+i+'"><span class="mono">'+esc(d.id)+'</span> '+esc(d.title||'')+'</button>';
+  }).join('');
+  list.querySelectorAll('.workspace-doc-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      list.querySelectorAll('.workspace-doc-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      openDcrDocInEditor(dcrGrantedDocs[parseInt(btn.getAttribute('data-i'), 10)]);
+    });
+  });
+  openDcrDocInEditor(dcrGrantedDocs[0]);
+}
+function openDcrDocInEditor(doc){
+  var empty = byId('dcrEditorEmpty');
+  var frame = byId('dcrEditorFrame');
+  var actions = byId('dcrEditorActions');
+  if (!doc || !frame) return;
+  if (empty) empty.hidden = true;
+  actions.hidden = false;
+  /* Word for the web embed: draft file URL in a DCR drafts library.
+     Until drafts exist, show guidance instead of a broken iframe. */
+  if (doc.editUrl) {
+    frame.hidden = false;
+    frame.src = doc.editUrl;
+  } else {
+    frame.hidden = true;
+    frame.src = 'about:blank';
+    if (empty) {
+      empty.hidden = false;
+      empty.innerHTML = '<p style="margin:0 0 10px"><strong>'+esc(doc.id)+'</strong> - '+esc(doc.title||'')+'</p>'
+        + '<p style="margin:0;color:var(--muted);font-size:13px;line-height:1.6">In-app editing will embed <em>Word for the web</em> against a draft DOCX in a SharePoint library (copy-on-grant). '
+        + 'Fallback: work in the local DOCX and upload it to the DCR draft library, then submit for Lab Manager review.</p>';
+    }
+  }
+}
+window.submitDcrDraftChanges = function(){
+  showAlert('info', 'Draft submit for Lab Manager review is not wired yet.');
+};
+window.demoGrantDcrAccess = function(docIds, dueDays){
+  /* Dev helper / future Lab Manager action: reveal workspace with granted docs. */
+  var reg = registerDocOptions();
+  dcrGrantedDocs = (docIds || []).map(function(id){
+    var n = reg.find(function(x){ return x.id === id; });
+    return n ? { id: n.id, title: n.title, editUrl: '' } : { id: id, title: '', editUrl: '' };
+  });
+  updateDcrRoleUi();
+  renderDcrWorkspace();
+  if (dcrGrantedDocs.length) {
+    switchTab('docs');
+    switchSub('docs', 'dcr-workspace');
+    showAlert('success', 'Access granted' + (dueDays ? (' - due in ' + dueDays + ' day(s)') : '') + '. Workspace tab is now available.');
+  }
+};
+
 window.saveDcr = function(){
-  var title = formVal('m-dcr', 'RequestTitle');
+  var primaryId = formVal('m-dcr', 'PrimaryDocId');
   var rationale = formVal('m-dcr', 'ProposedChangeRationale');
   var reqType = formVal('m-dcr', 'RequestType') || 'Revision';
   var driver = formVal('m-dcr', 'ChangeDriver') || 'Other';
-  if (!title || !rationale) { showAlert('error', 'Title and Proposed Change & Rationale are required.'); return; }
+  var primary = registerDocOptions().find(function(x){ return x.id === primaryId; });
+  var title = primary ? docLabel(primary) : formVal('m-dcr', 'RequestTitle');
+  var addl = dcrSelectedAddl.slice();
+  if (!primaryId || !primary) { showAlert('error', 'Select a primary document from the register.'); return; }
+  if (!rationale) { showAlert('error', 'Proposed Change & Rationale is required.'); return; }
   var btn = byId('m-dcr').querySelector('.btn-primary');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
   var today = todayStr();
+  var allDocs = [primaryId].concat(addl);
   nextSequenceId({ prefix: 'DCR-{YY}', pad: 3, listKey: 'dcr', field: 'DCRNumber' }).then(function(dcrNumber){
-    var uiRow = { id: dcrNumber, title: title, type: reqType, driver: driver, stage: 'Draft', stc: statusClass('Draft'), date: today };
+    var uiRow = { id: dcrNumber, title: title, type: reqType, driver: driver, stage: 'Access Review', stc: statusClass('Access Review'), date: today, docs: allDocs };
     var body = {
       Title: dcrNumber,
       DCRNumber: dcrNumber,
@@ -1352,11 +1637,15 @@ window.saveDcr = function(){
       appendLocal('dcr', uiRow);
       renderDcr(); renderDashboard();
       clearForm('m-dcr');
+      resetDcrAddlDocs();
+      var sel = byId('dcrPrimaryDoc'); if (sel) sel.value = '';
+      updateDcrPrimarySummary();
       closeModal('m-dcr');
       showAlert(ok ? 'success' : 'info', msg);
     }
+    /* Email to Lab Manager is a separate Power Automate flow on list item created - app only writes the row. */
     if (!SP_READY) {
-      finish(false, 'Saved locally (seed mode). Open from SharePoint to persist to LS_QP1402r01_ChangeRequests.');
+      finish(false, 'Saved locally (seed mode).');
       return;
     }
     var path = "/_api/web/lists/getbytitle('LS_QP1402r01_ChangeRequests')/items";
@@ -1366,7 +1655,7 @@ window.saveDcr = function(){
       finish(true, 'DCR ' + dcrNumber + ' saved to SharePoint.');
     }).catch(function(err){
       console.warn('[QMS] DCR SP save failed:', err);
-      finish(false, 'SharePoint save failed (' + (err.message || err) + '). Kept in session from seed fallback.');
+      finish(false, 'SharePoint save failed (' + (err.message || err) + '). Kept in session.');
     });
   }).catch(function(err){
     if (btn) { btn.disabled = false; btn.textContent = 'Submit Request'; }
@@ -1518,7 +1807,8 @@ function netClick(ev){
 }
 
 function renderAll(){
-  renderDashboard();renderRegister();renderSopList();renderClauseMatrix();renderDcr();renderOps();renderCompass();
+  renderDashboard();renderRegister();renderSopList();renderClauseMatrix();renderDcr();renderDcrWorkspace();renderOps();renderCompass();
+  updateDcrRoleUi();
 }
 
 function initApp(){
@@ -1528,7 +1818,7 @@ function initApp(){
   renderAll();
   var site = resolveSiteUrl();
   if (!site) {
-    console.info('[QMS] No SharePoint context — seed-only mode.');
+    console.info('[QMS] No SharePoint context - seed-only mode.');
     return;
   }
   SP_URL = site;
